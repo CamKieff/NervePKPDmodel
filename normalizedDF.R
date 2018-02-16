@@ -6,11 +6,11 @@ loadNormalizedDF <- function(index = 1, lower = TRUE, dataDF = "con", normDF = "
 
   #creates a list of file names for the chosen directory
   if (lower){
-    cap_directory_name <- 'NerveModel1/Formatted Lower Trachea/capsaicin/'
-    con_directory_name <- 'NerveModel1/Formatted Lower Trachea/control/'
+    cap_directory_name <- 'FormattedLowerTrachea/capsaicin/'
+    con_directory_name <- 'FormattedLowerTrachea/control/'
   } else{
-    cap_directory_name <- 'NerveModel1/FormattedUpperTrachea/capsaicin/'
-    con_directory_name <- 'NerveModel1/FormattedUpperTrachea/control/'
+    cap_directory_name <- 'FormattedUpperTrachea/capsaicin/'
+    con_directory_name <- 'FormattedUpperTrachea/control/'
   }
   cap_list <-dir(cap_directory_name, "*.csv")
   con_list <-dir(con_directory_name, "*.csv")

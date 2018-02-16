@@ -1,10 +1,10 @@
 #here we plot consensus value data against raw data. Consensus data is from controlModel_2drugs_uppertrach.R
 require(ggplot2)
-source("NerveModel1/normalizedDF.R")
+source("normalizedDF.R")
 
 #path for consensus file, make sure you gave it a header
-consensus_con <- read.csv("NerveModel1/Formatted Lower Trachea/control/consensus_2drugs.csv", header = TRUE)
-consensus_test <- read.csv("NerveModel1/Formatted Lower Trachea/control/consensus_2drugs_test1.csv", header = TRUE)
+consensus_con <- read.csv("FormattedLowerTrachea/control/consensus_2drugs.csv", header = TRUE)
+consensus_test <- read.csv("FormattedLowerTrachea/control/consensus_2drugs_test1.csv", header = TRUE)
 
 freq <- 30
 con_list = c(1,2,5,7) #List of indeces for the files used in this analysis

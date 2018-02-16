@@ -1,8 +1,14 @@
-#This script will help you find descriptive3 statistics after model runs.  It can also be used to
-#plot diagnostic plots of the mean vs median
+#This script will help you find descriptive statistics after model runs.
+#At the end is some code to plot diagnostic plots of the mean vs median
 
-cap_directory_name <- 'NerveModel1/FormattedUpperTrachea/capsaicin/'
-con_directory_name <- 'NerveModel1/FormattedUpperTrachea/control/'
+lowertrachea <- TRUE
+if(lowertrachea){
+  cap_directory_name <- 'FormattedLowerTrachea/capsaicin/'
+  con_directory_name <- 'FormattedLowerTrachea/control/'
+}else{
+  cap_directory_name <- 'FormattedUpperTrachea/capsaicin/'
+  con_directory_name <- 'FormattedUpperTrachea/control/'
+}
 
 #function to find descriptive statstics
 myFun <- function(x) {
@@ -13,8 +19,10 @@ myFun <- function(x) {
 
 descrstats <- NULL #set up empty data frame
 
+filename <- "Results_5.csv"
+
 #import final parameters
-wdata <- read.csv(paste0(con_directory_name, "Results_5.csv"), header=FALSE)
+wdata <- read.csv(paste0(con_directory_name, filename), header=FALSE)
 names(wdata) <- c('','Freq','KAunk', 'KEunk', 'DVunk', 'EC50unk', 'MAXunk', 'meanSS')
 #names(wdata) <- c('','Freq','KAach', 'KEach', 'DVach', 'meanSS')
 
@@ -35,7 +43,14 @@ for (i in c("KAunk", "KEunk", "logDVunk", "logEC50unk", "MAXunk", "meanSS")){
 #repeat the above code for each data set manually before exporting
 write.csv(descrstats, file = paste0(con_directory_name, "descrstats_2drugs_UT.csv")) #export
 
+#
+#
+#
+#
+#
+
 #Below is the graphing functions and formats. First reimport the descrstats as wdata
+#this code is not very polished. Many things may have to be altered manually
 wdata <- read.csv(paste0(directory_name, "Results_0.3-30_doubleInhibit_7.csv"), header=TRUE)
 
 #assign number for each individual "each" should be the number of frequencies multiplied by the

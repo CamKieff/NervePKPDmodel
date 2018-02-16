@@ -4,10 +4,12 @@
 #RxODE
 library(RxODE)
 library(ggplot2)
-source("NerveModel1/normalizedDF.R")
+source("normalizedDF.R")
 
+#choose a set of ODEs that describe the desired model
 prepareModel <- function(mod_num = 1){
   if(mod_num == 1){
+    #statistical summation 2-drug model
     ODE1 <- "
     d/dt(depot1) = -KA1*depot1;
     d/dt(centr1) = KA1*depot1 - KE1*centr1;
@@ -20,6 +22,7 @@ prepareModel <- function(mod_num = 1){
     eff2 = effb - effa + (effa * effb);
     "
   }  else if(mod_num == 2){
+    #decrease maximum 2-drug model
     ODE1 <- "
     d/dt(depot1) = -KA1*depot1;
     d/dt(centr1) = KA1*depot1 - KE1*centr1;
@@ -37,7 +40,6 @@ prepareModel <- function(mod_num = 1){
 
   return(list(mod1, ODEinits))
 }
-
 thismodel <- prepareModel(1)
 
 #a function that takes parameters and runs the model
