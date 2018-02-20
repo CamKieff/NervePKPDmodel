@@ -1,30 +1,25 @@
 #This script iteratively solves a system of ODEs and finds parameters
-#the model is for two neurotransmistters, one ACH, another unknown relaxant
+#the model is for one a single ACH-like neurotransmistter
 
-#RxODE
 library(RxODE)
 library(ggplot2)
 source("NerveModel1/normalizedDF.R")
-#cap_directory_name <- 'NerveModel1/FormattedUpperTrachea/capsaicin/'
-#con_directory_name <- 'NerveModel1/FormattedUpperTrachea/control/'
 
-#define model control, two neurotransmitters 1-CM
+#define model one neurotransmitter 1-CM
 ODE1 <- "
 d/dt(depot2) = -KA2*depot2 + KE3*centr2;
 d/dt(centr2) = KA2*depot2 - KE2*centr2 - KE3*centr2;
 eff2 = centr2/(EC502 + centr2);
 "
+#complex model
+ODE1 <- "
+d/dt(depot2) = -KA2*depot2 + KA2*KA2f*depot2*depot2/(depot2 + IC501);
+d/dt(centr2) = KA2*depot2 - KA2*KA2f*depot2*depot2/(depot2 + IC501) - KE2*centr2 + KE2*KE2f*centr2*centr2/(centr2 + IC502);
+eff2 = centr2/(EC502+centr2);
+"
 
-#Compile Model
-mod1 <- RxODE(model = ODE1, modName = "mod1")
+mod1 <- RxODE(model = ODE1, modName = "mod1") #Compile Model
 ODEinits <- c(depot2 = 0, centr2 = 0)  #initial conditions
-
-#Define initial parameters - ACh consensus values here
-KAach <- 0.5
-KEach1 <- 1.023
-KEach2 <- 0.177
-DVach <- 5.3
-EC50ach <- 10^-5.383
 
 #a function that takes parameters and runs the model
 run_1drug_mod1 <- function(final_mod_params, stim_freq){
@@ -50,7 +45,7 @@ run_1drug_mod1 <- function(final_mod_params, stim_freq){
 }
 
 #returns a dataframe of chosen/tested parameters from the model
-#conDF should be formatted using loadNormalizedDF (see below)
+#conDF should be formatted using loadNormalizedDF
 final_1Dparams <-function(stim_freq, m = 50, conDF, init_params, initModel, chosen=TRUE){
 
   lambda <- 2
@@ -96,6 +91,13 @@ final_1Dparams <-function(stim_freq, m = 50, conDF, init_params, initModel, chos
     return(tested_params)
   }
 }
+
+#Define initial parameters
+KAach <- 0.5
+KEach1 <- 1.023
+KEach2 <- 0.177
+DVach <- 5.3
+EC50ach <- 10^-5.383
 
 freq0<-10
 

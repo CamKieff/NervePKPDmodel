@@ -19,7 +19,7 @@ myFun <- function(x) {
 
 descrstats <- NULL #set up empty data frame
 
-filename <- "Results_5.csv"
+filename <- "Results_5.csv" #example
 
 #import final parameters
 wdata <- read.csv(paste0(con_directory_name, filename), header=FALSE)

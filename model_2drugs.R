@@ -43,38 +43,57 @@ prepareModel <- function(mod_num = 1){
 thismodel <- prepareModel(1)
 
 #a function that takes parameters and runs the model
-run_2drugs_mod1 <- function(final_mod_params, stim_freq){
-  #(KAunk, KEunk, logDVunk, logEC50unk, MAXunk)
-  mod_params <- c(KA1 = final_mod_params[1],
-                  KE1 = final_mod_params[2],
-                  KA2 = KAach,
-                  KE2 = KEach,
-                  max1 = final_mod_params[5],
-                  EC501 = 10^-final_mod_params[4],
-                  EC502 = EC50ach
-  )
-  time_var <- 60 #length of stimulation in seconds
-  pulse_rate <- 1/stim_freq
-  num_doses <- time_var/pulse_rate
-  testev <- eventTable(amount.units="mol", time.unit="seconds")
-  testev$add.dosing(dose = 10^-final_mod_params[3], nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 1, start.time = 0)
-  testev$add.dosing(dose = 10^-DVach, nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 3, start.time = 0)
-  testev$add.sampling(seq(from = 0, to = time_var, by = 0.02))
+run_2drugs_mod1 <- function(stim_freq, final_mod_params, NT=2){
+  if (NT==2){
+    #(KAunk, KEunk, logDVunk, logEC50unk, MAXunk)
+    mod_params <- c(KA1 = final_mod_params[1],
+                    KE1 = final_mod_params[2],
+                    KA2 = KAach,
+                    KE2 = KEach,
+                    max1 = final_mod_params[5],
+                    EC501 = 10^-final_mod_params[4],
+                    EC502 = 10^-EC50ach
+    )
+    time_var <- 60 #length of stimulation in seconds
+    pulse_rate <- 1/stim_freq
+    num_doses <- time_var/pulse_rate
+    testev <- eventTable(amount.units="mol", time.unit="seconds")
+    testev$add.dosing(dose = 10^-final_mod_params[3], nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 1, start.time = 0)
+    testev$add.dosing(dose = 10^-DVach, nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 3, start.time = 0)
+    testev$add.sampling(seq(from = 0, to = time_var, by = 0.02))
 
-  finalres <- thismodel[[1]]$run(mod_params, testev, thismodel[[2]])
+    finalres <- thismodel[[1]]$run(mod_params, testev, thismodel[[2]])
+  } else if(NT==1){
+    mod_params <- c(KA2 = final_mod_params[1],
+                    KE2 = KEach1,
+                    KE3 = KEach2,
+                    EC502 = EC50ach
+    )
+    time_var <- 60 #length of stimulation in seconds
+    if(stim_freq == 0.1){
+      pulse_rate <- 1/stim_freq
+    } else{
+      pulse_rate <- 1/stim_freq
+    }
+    num_doses <- time_var/pulse_rate
+    testev <- eventTable(amount.units="mol", time.unit="seconds")
+    testev$add.dosing(dose = 10^-DVach, nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 1, start.time = 0)
+    testev$add.sampling(seq(from = 0, to = time_var, by = 0.02))
 
+    finalres <- mod1$run(mod_params, testev, ODEinits)
+  }
   return(finalres)
 }
 
 #returns a dataframe of chosen/tested parameters from the model
 #conDF should be formatted using loadNormalizedDF (see below)
-final_2Dparams <-function(stim_freq, m = 50, conDF, init_params, initModel, chosen=TRUE){
+final_2Dparams <-function(stim_freq, m = 50, conDF, init_params, init_model, NT=2, chosen=TRUE){
 
-  testexp <- 4     #sum of squares exponenet
+  testexp <- 4     #sum of "squares" exponenet
   lambda <- 2    #learning rate
 
   #creates workingdata for the model comparison
-  workingdata <- data.frame(initModel[,"time"], initModel[,"eff2"], conDF[1:length(initModel[,"time"]),paste0("X", stim_freq, "HZ")])
+  workingdata <- data.frame(init_model[,"time"], init_model[,"eff2"], conDF[1:length(init_model[,"time"]),paste0("X", stim_freq, "HZ")])
   names(workingdata)<- c("Time", "Model", "Data")
   workingdata$SS <- (workingdata$Model - workingdata$Data)^testexp
 
@@ -89,7 +108,7 @@ final_2Dparams <-function(stim_freq, m = 50, conDF, init_params, initModel, chos
       tested_params <- rbind(tested_params, testparams)
 
       #calls run_2drugs_mod1 to run the model
-      iteration <- run_2drugs_mod1(testparams, stim_freq)
+      iteration <- run_2drugs_mod1(stim_freq, testparams, NT=NT)
 
       #calculate Sum of Squares Objective function for the new model
       workingdata$newmodel <- iteration[1:length(workingdata$Model),"eff2"]
@@ -116,10 +135,14 @@ final_2Dparams <-function(stim_freq, m = 50, conDF, init_params, initModel, chos
 }
 
 #Define initial parameters - > ACh consensus values here
+##Decide on format here
 KAach <- 0.2417
 KEach <- 0.5268
 DVach <- 5.902
-EC50ach <- 10^-5.383
+EC50ach <- 5.383
+init_params_ach <- list(KAach = 0.2417,
+                        KEach = 0.5268,
+                        DVach = 5.902)
 
 #Relaxation initial parameters
 KAunk <- 1
@@ -127,6 +150,7 @@ KEunk <- 1
 DVunk <- 7
 EC50unk <- 5
 MAXunk <- 1
+init_params_unk <- list(KAunk = 1, KEunk = 1, DVunk = 7, EC50unk = 5, MAXunk = 1)
 
 #Unknown parameters in order (KAunk, KEunk, DVunk, EC50unk, MAXunk)
 init_params1 <- c(KAunk, KEunk, DVunk, EC50unk, MAXunk)
@@ -134,9 +158,9 @@ freq_list <- c(0.1, 0.3, 0.7, 1, 3, 7, 10 , 15, 30)
 
 working_freq <- 30
 WconDF <- loadNormalizedDF(1, lower = FALSE, dataDF = "con", normDF = "con")
-initialresults <- run_2drugs_mod1(init_params1, stim_freq = working_freq)
+initialresults <- run_2drugs_mod1(stim_freq = working_freq, init_params1)
 finalparams <- final_2Dparams(stim_freq = working_freq, m = 500, WconDF, init_params1, initialresults)
-finalresults <- run_2drugs_mod1(finalparams[nrow(finalparams),], stim_freq = working_freq)
+finalresults <- run_2drugs_mod1(stim_freq = working_freq, finalparams[nrow(finalparams),])
 
 p30<- (ggplot() #plot
       + geom_path(aes(x=WconDF$Time, y=WconDF[,paste0("X", working_freq, "HZ")]), color="black", alpha = 0.5)
@@ -172,17 +196,17 @@ massIteration <- function(con_list = c(1,2,5,7), dataDF = "con", normDF = "cap",
 #produces graphable consensus data
 consensus_models <- initialresults[,'time']
 for (q in freq_list){
-  #Define initial parameters - > ACh consensus values here
+  #ACh consensus values here
   KAach <- 0.2417
   KEach <- 0.5268
   DVach <- 10^-5.902
   EC50ach <- 10^-5.383
 
-  #Relaxation initial parameters
+  #Relaxation consensus values
   KAunk <- 0.9661
   KEunk <- 10.8071
-  DVunk <- 10^-7.4434
-  EC50unk <- 10^-4.048
+  DVunk <- 7.4434
+  EC50unk <- 4.048
   MAXunk <- 0.861135
   init_params1 <- c(KAunk, KEunk, DVunk, EC50unk, MAXunk)
 

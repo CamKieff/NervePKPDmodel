@@ -2,7 +2,7 @@
 require(ggplot2)
 source("normalizedDF.R")
 
-#path for consensus file, make sure you gave it a header
+#path for consensus file(s), make sure you gave it a header
 consensus_con <- read.csv("FormattedLowerTrachea/control/consensus_2drugs.csv", header = TRUE)
 consensus_test <- read.csv("FormattedLowerTrachea/control/consensus_2drugs_test1.csv", header = TRUE)
 
