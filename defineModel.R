@@ -37,7 +37,7 @@ defineModel <- function(ACH_mod="simple", unk_mod="none", effect_mod = "oneNT"){
 
   if(unk_mod == "none"){
     ODEinits <- c(depot2 = 0, centr2 = 0) #initial conditions for single neurotransmitter
-  } else{
+  } else {
     ODEinits <- c(depot1 = 0, centr1 = 0, depot2 = 0, centr2 = 0) #initial conditions for two neurotransmitters
   }
 

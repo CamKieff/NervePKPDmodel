@@ -24,14 +24,6 @@ filename <- "Results_5.csv" #example
 #import final parameters
 wdata <- read.csv(paste0(con_directory_name, filename), header=FALSE)
 names(wdata) <- c('','Freq','KAunk', 'KEunk', 'DVunk', 'EC50unk', 'MAXunk', 'meanSS')
-#names(wdata) <- c('','Freq','KAach', 'KEach', 'DVach', 'meanSS')
-
-#log10 transfrom applicable values
-#wdata$logIC501 <- log10(wdata$IC501)
-#wdata$logIC502 <- log10(wdata$IC502)
-wdata$logDVunk <- log10(wdata$DVunk)
-wdata$logEC50unk <- log10(wdata$EC50unk)
-#wdata$logDVach <- log10(wdata$DVach)
 
 #collects summary statistics for values given in the vector. Rbinds them to our empty data frame
 for (i in c("KAunk", "KEunk", "logDVunk", "logEC50unk", "MAXunk", "meanSS")){
