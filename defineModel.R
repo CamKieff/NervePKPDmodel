@@ -5,6 +5,8 @@
 #summation method of model if more than two neurotransmitters are used
 
 #ODEinits for one drug vs two drugs
+require(RxODE)
+
 defineModel <- function(ACH_mod="simple", unk_mod="none", effect_mod = "oneNT"){
   ach_models <- list(
     none = "",
@@ -25,21 +27,27 @@ defineModel <- function(ACH_mod="simple", unk_mod="none", effect_mod = "oneNT"){
   effect_models <- list(
     none = "",
     oneNT = "eff2 = centr2/(EC502+centr2);",
-    twoNT1 = "effa = max1*centr1/(EC501 + centr1);
+    twoNT_1 = "effa = max1*centr1/(EC501 + centr1);
             effb = centr2/(EC502 + centr2);
             eff2 = effb - effa + (effa * effb);",
-    twoNT2 = "eff1 = max1*centr1/(EC501 + centr1);
+    twoNT_2 = "eff1 = max1*centr1/(EC501 + centr1);
             eff2 = (1-eff1)*centr2/(EC502 + centr2);"
   )
+  if(unk_mod == "none"){
+    effect_mod <- "oneNT"
+  }
+
   ODE1 <- paste(unk_models[unk_mod], ach_models[ACH_mod], effect_models[effect_mod])
 
   mod1 <- RxODE(model = ODE1, modName = "mod1") #Compile Model
 
   if(unk_mod == "none"){
     ODEinits <- c(depot2 = 0, centr2 = 0) #initial conditions for single neurotransmitter
+    NTnum <- 1
   } else {
     ODEinits <- c(depot1 = 0, centr1 = 0, depot2 = 0, centr2 = 0) #initial conditions for two neurotransmitters
+    NTnum <- 2
   }
 
-  return(list(mod1, ODEinits))
+  return(list(mod1, ODEinits, NTnum))
 }

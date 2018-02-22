@@ -2,8 +2,8 @@
 #the model is defined in "defineModel.R" It can work with a single ACH-like neurotransmitter (NT)
 #or it can use two neurotransmitters, one constrictor (acetylcholine; ACH) and one relaxant (unknown; unk)
 
-#the only glaring outstanding project is incorporated 0.1 Hz variability without creating a new
-#column in the results of the plot.  In fact, if the model only has one NT, there are a lot of extraneous variables in the output
+#incorporating 0.1 Hz variability without creating a new column in the results of the plot.
+#In fact, if the model only has one NT, there are a lot of extraneous variables in the output
 #need some code to trim output from final_drug_params
 
 library(RxODE)
@@ -11,10 +11,8 @@ library(ggplot2)
 source("normalizedDF.R")
 source("defineModel.R")
 
-thismodel <- defineModel(ACH_mod="simple", unk_mod="none", effect_mod = "oneNT")
-
 #a function that takes parameters and runs the model
-run_mod1 <- function(NT=2, stim_freq, mod_params){
+run_mod1 <- function(stim_freq, mod_params){
   parameters <- c(KA1 = mod_params$KAunk,
                   KE1 = mod_params$KEunk,
                   KA2 = mod_params$KAach,
@@ -29,14 +27,14 @@ run_mod1 <- function(NT=2, stim_freq, mod_params){
               )
   time_var <- 60 #length of stimulation in seconds
 
-   if (NT == 2){
+   if (thismodel[[3]] == 2){
     pulse_rate <- 1/stim_freq
     num_doses <- time_var/pulse_rate
     testev <- eventTable(amount.units="mol", time.unit="seconds")
     testev$add.dosing(dose = 10^-mod_params$DVunk, nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 1, start.time = 0)
     testev$add.dosing(dose = 10^-mod_params$DVach, nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 3, start.time = 0)
     testev$add.sampling(seq(from = 0, to = time_var, by = 0.02))
-  } else if(NT == 1){
+  } else if(thismodel[[3]] == 1){
 
     if(stim_freq == 0.1){
       pulse_rate <- 1/stim_freq
@@ -50,14 +48,13 @@ run_mod1 <- function(NT=2, stim_freq, mod_params){
   } else(
     print("Model does not currently support more than two neurotransmitters (NT). Please set NT equal to either 1 or 2.")
   )
-
   finalres <- thismodel[[1]]$run(parameters, testev, thismodel[[2]])
   return(finalres)
 }
 
-#returns a dataframe of chosen/tested parameters from the model
+#returns a dataframe of chosen/tested best-fit parameters from the model
 #conDF should be formatted using loadNormalizedDF from "normalizedDF.R"
-final_drug_params <-function(NT=2, stim_freq, m = 50, conDF, bestfit, init_params, init_model, chosen=TRUE){
+final_drug_params <-function(stim_freq, m = 50, conDF, bestfit, init_params, init_model, chosen=TRUE){
 
   testexp <- 2     #sum of "squares" exponent (must be even; 2 or 4 are probably optimal)
   lambda <- 2      #learning rate
@@ -77,7 +74,7 @@ final_drug_params <-function(NT=2, stim_freq, m = 50, conDF, bestfit, init_param
       testparams[[i]] <- abs(rnorm(n = 1, mean = newparams[[i]], sd = (sqrt(init_params[[i]]^2)*lambda)))
       tested_params <- rbind(tested_params, testparams)
 
-      iteration <- run_mod1(NT=NT, stim_freq, testparams)       #calls run_mod1 to run the model
+      iteration <- run_mod1(stim_freq, testparams)       #calls run_mod1 to run the model
 
       #calculate Sum of Squares Objective function for the new model
       workingdata$newmodel <- iteration[1:length(workingdata$Model),"eff2"]
@@ -94,7 +91,6 @@ final_drug_params <-function(NT=2, stim_freq, m = 50, conDF, bestfit, init_param
       }
     }
   }
-
   print(chosen_params[nrow(chosen_params),]) #prints the final parameters
   if(chosen){
     return(chosen_params) #all accepted parameters. Final row are the best-fit parameters
@@ -122,14 +118,14 @@ init_params <- list(KAach = 0.2417, #ach model parameters
                     MAXunk = 1)
 
 #Define a single model to run and plot
+thismodel <- defineModel(ACH_mod="simple", unk_mod="none", effect_mod = "oneNT") #what model
 freq0 <- 1                               #what frequency
-num_NT <- 1                              #how many neurotransmitters (should be informed by the model used)
 bestfit <- c("KAach", "KEach", "DVach")  #what unknowns are being solved for?
 
 WconDF <- loadNormalizedDF(1, lower = TRUE, dataDF = "cap", normDF = "cap")
-initialresults <- run_mod1(NT = num_NT, stim_freq = freq0, init_params)
-finalparams <- final_drug_params(NT = num_NT, stim_freq = freq0, m = 500, WconDF, bestfit = bestfit, init_params, initialresults)
-finalresults <- run_mod1(NT = num_NT, stim_freq = freq0, finalparams[nrow(finalparams),])
+initialresults <- run_mod1(stim_freq = freq0, init_params)
+finalparams <- final_drug_params(stim_freq = freq0, m = 500, WconDF, bestfit = bestfit, init_params, initialresults)
+finalresults <- run_mod1(stim_freq = freq0, finalparams[nrow(finalparams),])
 
 p30<- (ggplot() #plot
       + geom_path(aes(x=WconDF$Time, y=WconDF[,paste0("X", freq0, "HZ")]), color="black", alpha = 0.5)
@@ -142,23 +138,23 @@ p30<- (ggplot() #plot
 p30
 
 #runs the model for all tissues and frequencies
-Iteration <- function(con_list = c(1,2,5,7), dataDF = "con", normDF = "cap", lower = TRUE, filename = "Results_"){
+Iteration <- function(con_list = c(1,2,5,7), dataDF = "con", normDF = "cap", lower = TRUE, filename = "/FormattedLowerTrachea/capsaicin/Results_"){
   freq_list <- c(0.1, 0.3,0.7,1, 3, 7, 10, 15, 30)
   for(r in con_list){                                                 #iterates through each raw file
     WconDF <- loadNormalizedDF(r, lower = lower, dataDF = dataDF, normDF = normDF) #load file
     for (q in freq_list){                                             #iterates through each frequency
-      initialresults <- run_mod1(init_params1, q)              #find starting point model results from initial parameters
-      finalparams <- final_drug_params(q, m=500, WconDF, init_params1, initialresults)
+      initialresults <- run_mod1(q, init_params1)              #find starting point model results from initial parameters
+      finalparams <- final_drug_params(q, m = 500, WconDF, bestfit = bestfit, init_params, initialresults)
 
       finalparamsDF <- c(q, finalparams[nrow(finalparams),])          #take initial parameters and start vector for final values
 
       for(k in seq(1:100)){
-        finalparams <- final_drug_params(q, m=500, WconDF, init_params1, initialresults)
+        finalparams <- final_drug_params(q, m = 500, WconDF, bestfit = bestfit, init_params, initialresults)
         finalparamsDF <- rbind(finalparamsDF, c(q, finalparams[nrow(finalparams),]))
       }
-      #export after each frequency
+      #append results to a single cvs file per index after each frequency
       finalparamsDF<-as.data.frame(finalparamsDF)
-      write.table(finalparamsDF, paste0(con_directory_name, filename, r, ".csv"), append = TRUE, sep = ",", dec = ".", qmethod = "double", col.names = FALSE)
+      write.table(finalparamsDF, paste0(filename, r, ".csv"), append = TRUE, sep = ",", dec = ".", qmethod = "double", col.names = FALSE)
     }
   }
 }
