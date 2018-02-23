@@ -1,8 +1,8 @@
-#here we plot consensus value data against raw data. Consensus data is from controlModel_2drugs_uppertrach.R
+#plot consensus value data against raw data. Consensus data is from model_2drugs.R
 require(ggplot2)
 source("normalizedDF.R")
 
-#path for consensus file(s), make sure you gave it a header
+#path for consensus file(s), make sure it has a header
 consensus_con <- read.csv("FormattedLowerTrachea/control/consensus_2drugs.csv", header = TRUE)
 consensus_test <- read.csv("FormattedLowerTrachea/control/consensus_2drugs_test1.csv", header = TRUE)
 
@@ -37,7 +37,7 @@ p10
 
 freq_list <- c(0.1, 0.3, 0.7, 1, 3, 5, 7, 10, 15, 30)
 
-#calculates percent error compared to one model
+#calculates percent error compared to one model between one consensus file
 calculate_perror <- function(consensus_file = consensus_con, con_list = c(1,2,5,7), dataDF = "con", normDF = "cap"){
   perror <- NULL
   for (y in con_list){

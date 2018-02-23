@@ -1,5 +1,8 @@
-#This script will help you find descriptive statistics after model runs.
+#This script finds descriptive statistics after model runs.
 #At the end is some code to plot diagnostic plots of the mean vs median
+
+#model_2drugs.R should rename the results so that they don't have to be named here.
+#that would allow us to run myfun on every column instead of having to define the columns
 
 lowertrachea <- TRUE
 if(lowertrachea){
@@ -10,7 +13,7 @@ if(lowertrachea){
   con_directory_name <- 'FormattedUpperTrachea/control/'
 }
 
-#function to find descriptive statstics
+#define descriptive statstics function
 myFun <- function(x) {
   c(min = min(x), max = max(x),
   mean = mean(x), median = median(x),
@@ -19,7 +22,7 @@ myFun <- function(x) {
 
 descrstats <- NULL #set up empty data frame
 
-filename <- "Results_5.csv" #example
+filename <- "Results_5.csv" #example file name
 
 #import final parameters
 wdata <- read.csv(paste0(con_directory_name, filename), header=FALSE)

@@ -16,10 +16,10 @@ The default number of iterations to find the best fit is 50, but 500 might be mo
 
 After the `final_drug_params` has been run `run_mod1` is run again on the final set of parameters to generate concentration vs. time data to be plotted.  Data are plotted in model_2drugs.R using `ggplot2`. The example plotting function given plots the experimental data in black, initial results of `run_mod1`, and the final best-fit results.
 
-The `Iteration` is a wrapper function takes a list of file indices and some normalization inputs and generates 100 sets of final best-fit results for each file at each frequency using a given model.   After each frequency it appends its results to a single CSV file per index. After I worked out all the kinks, this function just ran through everything.  It had to run overnight on my small corner of Creighton's server space.
+`Iteration` is a wrapper function that takes a list of file indices and some normalization inputs and generates 100 sets of final best-fit results for each file at each frequency using a given model.   After each frequency it appends its results to a single CSV file per index. After I worked out all the kinks, this function just ran through everything.  It had to run overnight on my small corner of Creighton's server space.
 
-descriptive_statistics.R
+`facetgraph` is another wrapper function that produces a nine-panel graph of a single run of `final_drug_params` for each frequency.
 
-plottime.R
+descriptiveStatistics.R contains a loose collection of code to find the min, max, mean, median, and standard deviation of best-fit parameters for each frequency for results from `Iteration` or a similar function.
 
-facet_wrap.R
+consensusPlot.R
