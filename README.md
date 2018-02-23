@@ -22,4 +22,4 @@ After the `final_drug_params` has been run `run_mod1` is run again on the final 
 
 descriptiveStatistics.R contains a loose collection of code to find the min, max, mean, median, and standard deviation of best-fit parameters for each frequency for results from `Iteration` or a similar function.
 
-consensusPlot.R
+consensusPlot.R needs more work to be finalized. combine percent error and AUC function. 
