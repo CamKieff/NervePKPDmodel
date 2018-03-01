@@ -28,6 +28,7 @@ init_params <- list(KAach = 0.2417, #ach model parameters
 
 #Define a single model to run and plot
 thismodel <- defineModel(ACH_mod="simple", unk_mod="none", effect_mod = "oneNT") #what model
+thismodel[[1]]$model                     #check model diagnostic
 freq0 <- 1                               #what frequency
 bestfit <- c("KAach", "KEach", "DVach")  #what unknowns are being solved for?
 
@@ -69,24 +70,4 @@ Iteration <- function(con_list = c(1,2,5,7), dataDF = "con", normDF = "cap", low
 }
 
 #run facetgraph function. Plots all the frequencies on one graph.
-facetgraph(WconDF, init_params=init_params, bestfit=bestfit)
-
-#produces graphable consensus data
-freq_list <- c(0.1, 0.3,0.7,1, 3, 7, 10, 15, 30)
-consensus_models <- initialresults[,'time']
-for (q in freq_list){
-  init_params <- list(KAach = 0.2417,
-                      KEach = 0.5268,
-                      DVach = 5.902,
-                      EC50ach = 5.383,
-
-                      KAunk = 0.9661,
-                      KEunk = 10.8071,
-                      DVunk = 7.4434,
-                      EC50unk = 4.048,
-                      MAXunk = 0.861135)
-
-  initialresults <- run_mod1(NT = 2, q, init_params) #run model with consensus values
-  consensus_models <- cbind(consensus_models, initialresults[,'eff2']) #append freq results
-}
-write.csv(consensus_models, file = paste0(con_directory_name, "consensus_2drugs.csv"))
+facetgraph(WconDF, init_params=init_params, bestfit=bestfit, consensus = FALSE)

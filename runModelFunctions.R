@@ -4,6 +4,10 @@
 #In fact, if the model only has one NT, there are a lot of extraneous variables in the output
 #need some code to trim output from final_drug_params
 
+#some global parameters need to be defined outside of the functions (init_params)
+#variables cannot be controlled from outside some of the function wrappers (m, freq_list?)
+#initial parameters, model definition
+
 require(ggplot2)
 require(reshape2)
 source("normalizedDF.R")
@@ -46,7 +50,7 @@ run_mod1 <- function(stim_freq, mod_params){
   } else(
     print("Model does not currently support more than two neurotransmitters (NT). Please set NT equal to either 1 or 2.")
   )
-  finalres <- thismodel[[1]]$run(parameters, testev, thismodel[[2]])
+  finalres <- thismodel[[1]]$solve(parameters, testev, thismodel[[2]]) #this actually solves the model
   return(finalres)
 }
 
@@ -98,18 +102,19 @@ final_drug_params <-function(stim_freq, m = 50, conDF, bestfit, init_params, ini
 }
 
 #runs the model 100x for all tissues and frequencies
-Iteration <- function(con_list = c(1,2,5,7), dataDF = "con", normDF = "cap", lower = TRUE, filename = "/FormattedLowerTrachea/capsaicin/Results_"){
+#can also run a single model if con_list is only set to a single index
+Iteration <- function(con_list = c(1,2,5,7), m = 500, n = 100, dataDF = "con", normDF = "cap", lower = TRUE, filename = "/FormattedLowerTrachea/capsaicin/Results_"){
   freq_list <- c(0.1, 0.3,0.7,1, 3, 7, 10, 15, 30)
   for(r in con_list){                                                 #iterates through each raw file
     WconDF <- loadNormalizedDF(r, lower = lower, dataDF = dataDF, normDF = normDF) #load file
     for (q in freq_list){                                             #iterates through each frequency
       initialresults <- run_mod1(q, init_params1)              #find starting point model results from initial parameters
-      finalparams <- final_drug_params(q, m = 500, WconDF, bestfit = bestfit, init_params, initialresults)
+      finalparams <- final_drug_params(q, m = m, WconDF, bestfit = bestfit, init_params, initialresults)
 
       finalparamsDF <- c(q, finalparams[nrow(finalparams),])          #take initial parameters and start vector for final values
 
-      for(k in seq(1:100)){
-        finalparams <- final_drug_params(q, m = 500, WconDF, bestfit = bestfit, init_params, initialresults)
+      for(k in seq(1:n)){
+        finalparams <- final_drug_params(q, m = m, WconDF, bestfit = bestfit, init_params, initialresults)
         finalparamsDF <- rbind(finalparamsDF, c(q, finalparams[nrow(finalparams),]))
       }
       #append results to a single cvs file per index after each frequency
@@ -120,26 +125,40 @@ Iteration <- function(con_list = c(1,2,5,7), dataDF = "con", normDF = "cap", low
 }
 
 #run final_drug_params once for each frequency and create a nice facetwrap graph of the best-fit results
-facetgraph <- function(conDF, init_params, bestfit){
+facetgraph <- function(conDF, init_params, bestfit, consensus = FALSE){
   freq_list <- c(0.1, 0.3, 0.7, 1, 3, 7, 10 , 15, 30)
   facetDF <-NULL
   for (i in freq_list){
     working_freq <- i
     initialresults <- run_mod1(stim_freq = working_freq, init_params)
-    finalparams <- final_drug_params(stim_freq = working_freq, m = 500, conDF, bestfit = bestfit, init_params, initialresults)
-    finalresults <- run_mod1(stim_freq = working_freq, finalparams[nrow(finalparams),])
-    plotDF <- data.frame(rep(working_freq, length(finalresults)), initialresults[,"time"], conDF[1:length(initialresults[,"time"]),paste0("X", working_freq, "HZ")], initialresults[,"eff2"], finalresults[,"eff2"])
+    if(consensus == TRUE){
+      plotDF <- data.frame(rep(working_freq, length(initialresults)), initialresults[,"time"], conDF[1:length(initialresults[,"time"]),paste0("X", working_freq, "HZ")], initialresults[,"eff2"])
+    } else{
+      finalparams <- final_drug_params(stim_freq = working_freq, m = 500, conDF, bestfit = bestfit, init_params, initialresults)
+      finalresults <- run_mod1(stim_freq = working_freq, finalparams[nrow(finalparams),])
+      plotDF <- data.frame(rep(working_freq, length(finalresults)), initialresults[,"time"], conDF[1:length(initialresults[,"time"]),paste0("X", working_freq, "HZ")], initialresults[,"eff2"], finalresults[,"eff2"])
+    }
+
     facetDF <- rbind(plotDF, facetDF)
   }
+  if(consensus == TRUE){
+    colnames(facetDF)<-c("Freq", "Time", "Raw", "Consensus")
+    p <- (ggplot(facetDF)
+          + geom_line(aes(x=Time, y=Raw), color="black", alpha = 0.5)
+          + geom_line(aes(x=Time, y=Consensus), color="red",size = 1)
+          + facet_wrap(~ Freq, scales="free", ncol=3)
+          + theme_bw()
+    )
+  } else{
+    colnames(facetDF)<-c("Freq", "Time", "Raw", "Initial", "Final")
+    p <- (ggplot(facetDF)
+          + geom_line(aes(x=Time, y=Raw), color="black", alpha = 0.5)
+          + geom_line(aes(x=Time, y=Initial), color="green",size = 1)
+          + geom_line(aes(x=Time, y=Final), color="red",size = 1)
+          + facet_wrap(~ Freq, scales="free", ncol=3)
+          + theme_bw()
+    )
+  }
 
-  colnames(facetDF)<-c("Freq", "Time", "Raw", "Initial", "Final")
-
-  p <- (ggplot(facetDF)
-        + geom_line(aes(x=Time, y=Raw), color="black", alpha = 0.5)
-        + geom_line(aes(x=Time, y=Initial), color="green",size = 1)
-        + geom_line(aes(x=Time, y=Final), color="red",size = 1)
-        + facet_wrap(~ Freq, scales="free", ncol=3)
-        + theme_bw()
-  )
   p
 }
