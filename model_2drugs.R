@@ -46,28 +46,3 @@ p30<- (ggplot() #plot
       +xlim(0,75)
 )
 p30
-
-#runs the model for all tissues and frequencies
-Iteration <- function(con_list = c(1,2,5,7), dataDF = "con", normDF = "cap", lower = TRUE, filename = "/FormattedLowerTrachea/capsaicin/Results_"){
-  freq_list <- c(0.1, 0.3,0.7,1, 3, 7, 10, 15, 30)
-  for(r in con_list){                                                 #iterates through each raw file
-    WconDF <- loadNormalizedDF(r, lower = lower, dataDF = dataDF, normDF = normDF) #load file
-    for (q in freq_list){                                             #iterates through each frequency
-      initialresults <- run_mod1(q, init_params1)              #find starting point model results from initial parameters
-      finalparams <- final_drug_params(q, m = 500, WconDF, bestfit = bestfit, init_params, initialresults)
-
-      finalparamsDF <- c(q, finalparams[nrow(finalparams),])          #take initial parameters and start vector for final values
-
-      for(k in seq(1:100)){
-        finalparams <- final_drug_params(q, m = 500, WconDF, bestfit = bestfit, init_params, initialresults)
-        finalparamsDF <- rbind(finalparamsDF, c(q, finalparams[nrow(finalparams),]))
-      }
-      #append results to a single cvs file per index after each frequency
-      finalparamsDF<-as.data.frame(finalparamsDF)
-      write.table(finalparamsDF, paste0(filename, r, ".csv"), append = TRUE, sep = ",", dec = ".", qmethod = "double", col.names = FALSE)
-    }
-  }
-}
-
-#run facetgraph function. Plots all the frequencies on one graph.
-facetgraph(WconDF, init_params=init_params, bestfit=bestfit, consensus = FALSE)
