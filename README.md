@@ -6,15 +6,15 @@ The raw data are maintained locally and contained in two folders corresponding t
 
 The file model_2drugs.R is a working file that contains instances of running the model functions described below. The model workflow begins with loading required packages and files, then the initial parameters are defined, the model is compiled, and the data file to be tested is imported.  The model is run to find best-fit parameters and the results can be exported or graphed.
 
-####normalizedDF.R
+#### normalizedDF.R
 
 The function `loadNormalizedDF` imports a selected data frame and normalizes the mg of tension response to a maximum. Parameters passed to the function include the section of trachea ("lower" or "upper") where the data was collected, data to be normalized ("con" or "cap" data), data to be used in the denominator to normalize (again, "con" or "cap" data), and the index for the file data file in its respective folder (integer that indicates the position of the file in the folder). In the lower trachea, capsaicin data is used to normalize both capsaicin and control data.  In the upper trachea however, control responses may have greater maxima than capsaicin responses and it may be necessary to normalize control responses to themselves.
 
-####defineModel.R
+#### defineModel.R
 
 The `defineModel` function from defineModel.R creates and compiles the model to be tested using the `RxODE` package.  The ACh component of the model can be "simple" with first-order one-compartment model kinetics or "complex" with saturable kinetics for absorption and elimination. The unknown relaxant component can be non-existent ("none") or present as a one-compartment first-order neurotransmitter ("simple"). If there is no unknown relaxant the effect model will default to a single neurotransmitter effect model.  If there is a defined unknown relaxant model there are two options for the way these two neurotransmitter effects are summed together. In the case of the "twoNT_1" option the relaxant effect is subtracted from the ACh effect and the product of the two effects is added back (*this has a name*). The "twoNT_2" option diminishes the ACh maximum effect proportionally to the unknown effect.
 
-####runModelFunctions.R
+#### runModelFunctions.R
 
 The major workhorses that bring the magic of the model together are `run_mod1` and `final_drug_params` functions. After importing the data, defining a model, and choosing a set of initial parameters, `run_mod1` runs the model using the `RxODE` package.
 
