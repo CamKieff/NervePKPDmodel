@@ -39,4 +39,6 @@ vignettes/*.pdf
 /FormattedLowerTrachea/capsaicin/*
 
 #Output folders from compiled models
-*.d*.c*.dll
+*.d
+*.c
+*.dll
