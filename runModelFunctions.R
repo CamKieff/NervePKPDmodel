@@ -14,7 +14,7 @@ source("normalizedDF.R")
 source("defineModel.R")
 
 #a function that takes parameters and runs the model
-run_mod1 <- function(stim_freq, mod_params){
+run_mod1 <- function(stim_freq, mod_params, chosenmodel = thismodel){
   parameters <- c(KA1 = mod_params$KAunk,
                   KE1 = mod_params$KEunk,
                   KA2 = mod_params$KAach,
@@ -29,14 +29,14 @@ run_mod1 <- function(stim_freq, mod_params){
   )
   time_var <- 60 #length of stimulation in seconds
 
-  if (thismodel[[3]] == 2){
+  if (chosenmodel[[3]] == 2){
     pulse_rate <- 1/stim_freq
     num_doses <- time_var/pulse_rate
     testev <- eventTable(amount.units="mol", time.unit="seconds")
     testev$add.dosing(dose = 10^-mod_params$DVunk, nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 1, start.time = 0)
     testev$add.dosing(dose = 10^-mod_params$DVach, nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 3, start.time = 0)
     testev$add.sampling(seq(from = 0, to = time_var, by = 0.02))
-  } else if(thismodel[[3]] == 1){
+  } else if(chosenmodel[[3]] == 1){
 
     if(stim_freq == 0.1){
       pulse_rate <- 1/stim_freq
@@ -50,7 +50,7 @@ run_mod1 <- function(stim_freq, mod_params){
   } else(
     print("Model does not currently support more than two neurotransmitters (NT). Please set NT equal to either 1 or 2.")
   )
-  finalres <- thismodel[[1]]$solve(parameters, testev, thismodel[[2]]) #this actually solves the model
+  finalres <- chosenmodel[[1]]$solve(parameters, testev, chosenmodel[[2]]) #this actually solves the model
   return(finalres)
 }
 
@@ -125,17 +125,17 @@ Iteration <- function(con_list = c(1,2,5,7), m = 500, n = 100, dataDF = "con", n
 }
 
 #run final_drug_params once for each frequency and create a nice facetwrap graph of the best-fit results
-facetgraph <- function(conDF, init_params, bestfit, consensus = FALSE){
-  freq_list <- c(0.1, 0.3, 0.7, 1, 3, 7, 10 , 15, 30)
+#or plot consensus results
+facetgraph <- function(conDF, init_params, bestfit, freq_list = c(0.1, 0.3, 0.7, 1, 3, 10, 15, 30), consensus = FALSE, chosenmodel = thismodel){
   facetDF <-NULL
   for (i in freq_list){
     working_freq <- i
-    initialresults <- run_mod1(stim_freq = working_freq, init_params)
+    initialresults <- run_mod1(stim_freq = working_freq, init_params, chosenmodel = chosenmodel)
     if(consensus == TRUE){
       plotDF <- data.frame(rep(working_freq, length(initialresults)), initialresults[,"time"], conDF[1:length(initialresults[,"time"]),paste0("X", working_freq, "HZ")], initialresults[,"eff2"])
     } else{
       finalparams <- final_drug_params(stim_freq = working_freq, m = 500, conDF, bestfit = bestfit, init_params, initialresults)
-      finalresults <- run_mod1(stim_freq = working_freq, finalparams[nrow(finalparams),])
+      finalresults <- run_mod1(stim_freq = working_freq, finalparams[nrow(finalparams),], chosenmodel = chosenmodel)
       plotDF <- data.frame(rep(working_freq, length(finalresults)), initialresults[,"time"], conDF[1:length(initialresults[,"time"]),paste0("X", working_freq, "HZ")], initialresults[,"eff2"], finalresults[,"eff2"])
     }
 
@@ -146,7 +146,8 @@ facetgraph <- function(conDF, init_params, bestfit, consensus = FALSE){
     p <- (ggplot(facetDF)
           + geom_line(aes(x=Time, y=Raw), color="black", alpha = 0.5)
           + geom_line(aes(x=Time, y=Consensus), color="red",size = 1)
-          + facet_wrap(~ Freq, scales="free", ncol=3)
+          #+ facet_wrap(~ Freq, scales="free", ncol=3)
+          + facet_wrap(~ Freq, ncol=3)
           + theme_bw()
     )
   } else{

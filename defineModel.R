@@ -39,7 +39,7 @@ defineModel <- function(ACH_mod="simple", unk_mod="none", effect_mod = "oneNT"){
 
   ODE1 <- paste(unk_models[unk_mod], ach_models[ACH_mod], effect_models[effect_mod])
 
-  mod1 <- RxODE(model = ODE1, modName = "mod1", wd="mod_files") #Compile Model
+  mod1 <- RxODE(model = ODE1) #Compile Model
 
   if(unk_mod == "none"){
     ODEinits <- c(depot2 = 0, centr2 = 0) #initial conditions for single neurotransmitter
