@@ -38,12 +38,14 @@ run_mod1 <- function(stim_freq, mod_params, chosenmodel = thismodel){
     testev$add.sampling(seq(from = 0, to = time_var, by = 0.02))
   } else if(chosenmodel[[3]] == 1){
 
-    if(stim_freq == 0.1){
+    if(stim_freq < 0.1){
       pulse_rate <- 1/stim_freq
+      num_doses <- time_var/pulse_rate + 1
     } else{
       pulse_rate <- 1/stim_freq
+      num_doses <- time_var/pulse_rate
+
     }
-    num_doses <- time_var/pulse_rate
     testev <- eventTable(amount.units="mol", time.unit="seconds")
     testev$add.dosing(dose = 10^-mod_params$DVach, nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 1, start.time = 0)
     testev$add.sampling(seq(from = 0, to = time_var, by = 0.02))
@@ -56,13 +58,20 @@ run_mod1 <- function(stim_freq, mod_params, chosenmodel = thismodel){
 
 #returns a dataframe of chosen/tested best-fit parameters from the model
 #conDF should be formatted using loadNormalizedDF from "normalizedDF.R"
-final_drug_params <-function(stim_freq, m = 50, conDF, bestfit, init_params, init_model, chosen=TRUE){
+final_drug_params <-function(stim_freq, m = 50, conDF, bestfit,
+                             init_params, init_model, model = thismodel,chosen=TRUE){
 
-  testexp <- 2     #sum of "squares" exponent (must be even; 2 or 4 are probably optimal)
-  lambda <- 2      #learning rate
+  testexp <- 4     #sum of "squares" exponent (must be even; 2 or 4 are probably optimal)
+  lambda <- 0.5      #learning rate
+
+  init_params <- c(init_params, "Frequency" = stim_freq) #allows for testing of frequency fits
 
   #creates workingdata for the model comparison
-  workingdata <- data.frame(init_model[,"time"], init_model[,"eff2"], conDF[1:length(init_model[,"time"]),paste0("X", stim_freq, "HZ")])
+  if (stim_freq < 0.2){
+    workingdata <- data.frame(init_model[,"time"], init_model[,"eff2"], conDF[1:length(init_model[,"time"]),paste0("X", 0.1, "HZ")])
+  } else{
+    workingdata <- data.frame(init_model[,"time"], init_model[,"eff2"], conDF[1:length(init_model[,"time"]),paste0("X", stim_freq, "HZ")])
+  }
   names(workingdata)<- c("Time", "Model", "Data")
   workingdata$SS <- (workingdata$Model - workingdata$Data)^testexp
 
@@ -76,7 +85,7 @@ final_drug_params <-function(stim_freq, m = 50, conDF, bestfit, init_params, ini
       testparams[[i]] <- abs(rnorm(n = 1, mean = newparams[[i]], sd = (sqrt(init_params[[i]]^2)*lambda)))
       tested_params <- rbind(tested_params, testparams)
 
-      iteration <- run_mod1(stim_freq, testparams)       #calls run_mod1 to run the model
+      iteration <- run_mod1(stim_freq = testparams$Frequency, testparams, chosenmodel = model)       #calls run_mod1 to run the model
 
       #calculate Sum of Squares Objective function for the new model
       workingdata$newmodel <- iteration[1:length(workingdata$Model),"eff2"]
@@ -93,7 +102,7 @@ final_drug_params <-function(stim_freq, m = 50, conDF, bestfit, init_params, ini
       }
     }
   }
-  print(chosen_params[nrow(chosen_params),]) #prints the final parameters
+  print(unlist(chosen_params[nrow(chosen_params),], use.names = FALSE)) #prints the final parameters
   if(chosen){
     return(chosen_params) #all accepted parameters. Final row are the best-fit parameters
   } else {
@@ -103,34 +112,49 @@ final_drug_params <-function(stim_freq, m = 50, conDF, bestfit, init_params, ini
 
 #runs the model 100x for all tissues and frequencies
 #can also run a single model if con_list is only set to a single index
-Iteration <- function(con_list = c(1,2,5,7), m = 500, n = 100, dataDF = "con", normDF = "cap", lower = TRUE, filename = "/FormattedLowerTrachea/capsaicin/Results_"){
-  freq_list <- c(0.1, 0.3,0.7,1, 3, 7, 10, 15, 30)
-  for(r in con_list){                                                 #iterates through each raw file
-    WconDF <- loadNormalizedDF(r, lower = lower, dataDF = dataDF, normDF = normDF) #load file
-    for (q in freq_list){                                             #iterates through each frequency
-      initialresults <- run_mod1(q, init_params1)              #find starting point model results from initial parameters
-      finalparams <- final_drug_params(q, m = m, WconDF, bestfit = bestfit, init_params, initialresults)
+Iteration <- function(con_list = c(1,2,5,7), m = 500, n = 100,
+                      dataDF = "con", normDF = "cap", lower = TRUE,
+                      ITmodel = thismodel, bestfit, init_params,
+                      freq_list = c(0.1, 0.3,0.7,1, 3, 7, 10, 15, 30),
+                      filename = "FormattedLowerTrachea/capsaicin/Results_"){
 
-      finalparamsDF <- c(q, finalparams[nrow(finalparams),])          #take initial parameters and start vector for final values
+  for(r in con_list){                                                      #iterates through each raw file
+    WconDF <- loadNormalizedDF(r, lower = lower, dataDF = dataDF, normDF = normDF) #load file
+    print(paste0("File ", r, " loaded."))
+    for (q in freq_list){                                                  #iterates through each frequency
+      print(paste0("Start ", q, " Hz run"))
+      initialresults <- run_mod1(q, init_params, chosenmodel = ITmodel)   #find starting point model results from initial parameters
+      finalparams <- final_drug_params(q, m = m, WconDF, bestfit = bestfit, init_params, initialresults, model = ITmodel)
+
+      finalparamsDF <- c(q, unlist(finalparams[nrow(finalparams),]), use.names = FALSE)               #take initial parameters and start vector for final values
 
       for(k in seq(1:n)){
-        finalparams <- final_drug_params(q, m = m, WconDF, bestfit = bestfit, init_params, initialresults)
-        finalparamsDF <- rbind(finalparamsDF, c(q, finalparams[nrow(finalparams),]))
+        finalparams <- final_drug_params(finalparams[nrow(finalparams),]$Frequency, m = m, WconDF, bestfit = bestfit, init_params, initialresults, model = ITmodel)
+        finalparamsDF <- rbind(finalparamsDF, c(q, unlist(finalparams[nrow(finalparams),], use.names= FALSE)))
       }
       #append results to a single cvs file per index after each frequency
+
       finalparamsDF<-as.data.frame(finalparamsDF)
-      write.table(finalparamsDF, paste0(filename, r, ".csv"), append = TRUE, sep = ",", dec = ".", qmethod = "double", col.names = FALSE)
+      names(finalparamsDF)<-c("Freq", names(init_params), "test_freq", "SS")
+      write.table(finalparamsDF, paste0(filename, r, ".csv"), append = TRUE, sep = ",", dec = ".", qmethod = "double", col.names = TRUE)
     }
   }
 }
 
 #run final_drug_params once for each frequency and create a nice facetwrap graph of the best-fit results
 #or plot consensus results
-facetgraph <- function(conDF, init_params, bestfit, freq_list = c(0.1, 0.3, 0.7, 1, 3, 10, 15, 30), consensus = FALSE, chosenmodel = thismodel){
+facetgraph <- function(conDF, init_params, bestfit,
+                       freq_list = c(0.1, 0.3, 0.7, 1, 3, 10, 15, 30),
+                       consensus = FALSE, chosenmodel = thismodel){
   facetDF <-NULL
   for (i in freq_list){
     working_freq <- i
-    initialresults <- run_mod1(stim_freq = working_freq, init_params, chosenmodel = chosenmodel)
+    if(working_freq < 0.2){
+      initialresults <- run_mod1(stim_freq = working_freq, init_params, chosenmodel = chosenmodel)
+      working_freq <- 0.1
+    } else{
+      initialresults <- run_mod1(stim_freq = working_freq, init_params, chosenmodel = chosenmodel)
+    }
     if(consensus == TRUE){
       plotDF <- data.frame(rep(working_freq, length(initialresults)), initialresults[,"time"], conDF[1:length(initialresults[,"time"]),paste0("X", working_freq, "HZ")], initialresults[,"eff2"])
     } else{
