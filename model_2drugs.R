@@ -10,8 +10,8 @@ source("runModelFunctions.R")
 
 #Define initial parameters.
 #for 2 NT: ACh consensus values here followed by initial unknown parameters
-init_params <- c(KAach = 1.954, #ach model parameters
-                    KEach = 1.583,
+init_params <- c(KAach = 3.0228, #ach model parameters
+                    KEach = 1.4223,
                     DVach = 6,
                     EC50ach = 5.383, #calculated from ACH constriction curves of isolated tracheas
 
@@ -32,8 +32,8 @@ thismodel[[1]]$model                     #check model diagnostic
 #freq0 <- 10                             #what frequency
 bestfit <- c("m2max", "chemax", "IC50m2","IC50che")  #what unknowns are being solved for?
 
-Iteration(con_list=2, freq_list = c(0.3,0.7,1,3,7,10,15,30), n=100, ITmodel = thismodel, bestfit = c("m2max", "chemax", "IC50m2","IC50che"),
-         init_params=init_params, filename = "FormattedLowerTrachea/control/complexResultsHz_")
+Iteration(con_list=5, freq_list = c(0.3,0.7,1,3,7,10,15,30), n=100, ITmodel = thismodel, bestfit = c("m2max", "chemax", "IC50m2","IC50che"),
+         init_params=init_params, hyperparams = c(4, 0.5), filename = "FormattedLowerTrachea/control/complexResultsHz_")
 
 
 # freq_list = c(0.3,0.7,1,3,7,10,15,30)

@@ -88,7 +88,8 @@ final_drug_params <-function(stim_freq, m = 50, conDF, bestfit,
 
       if(testparams[["m2max"]] > 1) {
         testparams[["m2max"]] <- 1
-      } if(testparams[["chemax"]] > 1) {
+      } 
+      if(testparams[["chemax"]] > 1) {
         testparams[["chemax"]] <- 1
       }
       if(!chosen){print(testparams)} #for debugging
@@ -121,7 +122,7 @@ final_drug_params <-function(stim_freq, m = 50, conDF, bestfit,
 #can also run a single model if con_list is only set to a single index
 Iteration <- function(con_list = c(1,2,5,7), m = 500, n = 100,
                       dataDF = "con", normDF = "cap", lower = TRUE,
-                      ITmodel = thismodel, bestfit, init_params, hyperparams = c(2, 0.5)
+                      ITmodel = thismodel, bestfit, init_params, hyperparams = c(2, 0.5),
                       freq_list = c(0.1, 0.3,0.7,1, 3, 7, 10, 15, 30),
                       filename = "FormattedLowerTrachea/capsaicin/Results_"){
 
