@@ -15,17 +15,17 @@ source("defineModel.R")
 
 #a function that takes parameters and runs the model
 run_mod1 <- function(stim_freq, mod_params, chosenmodel = thismodel){
-  parameters <- c(KA1 = mod_params$KAunk,
-                  KE1 = mod_params$KEunk,
-                  KA2 = mod_params$KAach,
-                  KE2 = mod_params$KEach,
-                  KA2f = mod_params$m2max,
-                  KE2f = mod_params$chemax,
-                  IC501 = 10^-mod_params$IC50m2,
-                  IC502 = 10^-mod_params$IC50che,
-                  max1 = mod_params$MAXunk,
-                  EC501 = 10^-mod_params$EC50unk,
-                  EC502 = 10^-mod_params$EC50ach
+  parameters <- c(KA1 = mod_params[["KAunk"]],
+                  KE1 = mod_params[["KEunk"]],
+                  KA2 = mod_params[["KAach"]],
+                  KE2 = mod_params[["KEach"]],
+                  KA2f = mod_params[["m2max"]],
+                  KE2f = mod_params[["chemax"]],
+                  IC501 = 10^-mod_params[["IC50m2"]],
+                  IC502 = 10^-mod_params[["IC50che"]],
+                  max1 = mod_params[["MAXunk"]],
+                  EC501 = 10^-mod_params[["EC50unk"]],
+                  EC502 = 10^-mod_params[["EC50ach"]]
   )
   time_var <- 60 #length of stimulation in seconds
 
@@ -33,8 +33,8 @@ run_mod1 <- function(stim_freq, mod_params, chosenmodel = thismodel){
     pulse_rate <- 1/stim_freq
     num_doses <- time_var/pulse_rate
     testev <- eventTable(amount.units="mol", time.unit="seconds")
-    testev$add.dosing(dose = 10^-mod_params$DVunk, nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 1, start.time = 0)
-    testev$add.dosing(dose = 10^-mod_params$DVach, nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 3, start.time = 0)
+    testev$add.dosing(dose = 10^-mod_params[["DVunk"]], nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 1, start.time = 0)
+    testev$add.dosing(dose = 10^-mod_params[["DVach"]], nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 3, start.time = 0)
     testev$add.sampling(seq(from = 0, to = time_var, by = 0.02))
   } else if(chosenmodel[[3]] == 1){
 
@@ -47,7 +47,7 @@ run_mod1 <- function(stim_freq, mod_params, chosenmodel = thismodel){
 
     }
     testev <- eventTable(amount.units="mol", time.unit="seconds")
-    testev$add.dosing(dose = 10^-mod_params$DVach, nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 1, start.time = 0)
+    testev$add.dosing(dose = 10^-mod_params[["DVach"]], nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 1, start.time = 0)
     testev$add.sampling(seq(from = 0, to = time_var, by = 0.02))
   } else(
     print("Model does not currently support more than two neurotransmitters (NT). Please set NT equal to either 1 or 2.")
@@ -59,12 +59,13 @@ run_mod1 <- function(stim_freq, mod_params, chosenmodel = thismodel){
 #returns a dataframe of chosen/tested best-fit parameters from the model
 #conDF should be formatted using loadNormalizedDF from "normalizedDF.R"
 final_drug_params <-function(stim_freq, m = 50, conDF, bestfit,
-                             init_params, init_model, model = thismodel,chosen=TRUE){
+                             init_params, init_model, model = thismodel, 
+                             hyper_params = c(2,0.5), chosen=TRUE){
 
-  testexp <- 4     #sum of "squares" exponent (must be even; 2 or 4 are probably optimal)
-  lambda <- 0.5      #learning rate
+  testexp <- hyper_params[1]     #sum of "squares" exponent (must be even; 2 or 4 are probably optimal)
+  lambda <- hyper_params[2]      #learning rate
 
-  init_params <- c(init_params, "Frequency" = stim_freq) #allows for testing of frequency fits
+  init_params <- c(init_params, Frequency = stim_freq) #allows for testing of frequency fits
 
   #creates workingdata for the model comparison
   if (stim_freq < 0.2){
@@ -85,7 +86,13 @@ final_drug_params <-function(stim_freq, m = 50, conDF, bestfit,
       testparams[[i]] <- abs(rnorm(n = 1, mean = newparams[[i]], sd = (sqrt(init_params[[i]]^2)*lambda)))
       tested_params <- rbind(tested_params, testparams)
 
-      iteration <- run_mod1(stim_freq = testparams$Frequency, testparams, chosenmodel = model)       #calls run_mod1 to run the model
+      if(testparams[["m2max"]] > 1) {
+        testparams[["m2max"]] <- 1
+      } if(testparams[["chemax"]] > 1) {
+        testparams[["chemax"]] <- 1
+      }
+      if(!chosen){print(testparams)} #for debugging
+      iteration <- run_mod1(stim_freq = testparams[["Frequency"]], testparams, chosenmodel = model)       #calls run_mod1 to run the model
 
       #calculate Sum of Squares Objective function for the new model
       workingdata$newmodel <- iteration[1:length(workingdata$Model),"eff2"]
@@ -102,7 +109,7 @@ final_drug_params <-function(stim_freq, m = 50, conDF, bestfit,
       }
     }
   }
-  print(unlist(chosen_params[nrow(chosen_params),], use.names = FALSE)) #prints the final parameters
+  print(chosen_params[nrow(chosen_params),]) #prints the final parameters
   if(chosen){
     return(chosen_params) #all accepted parameters. Final row are the best-fit parameters
   } else {
@@ -114,7 +121,7 @@ final_drug_params <-function(stim_freq, m = 50, conDF, bestfit,
 #can also run a single model if con_list is only set to a single index
 Iteration <- function(con_list = c(1,2,5,7), m = 500, n = 100,
                       dataDF = "con", normDF = "cap", lower = TRUE,
-                      ITmodel = thismodel, bestfit, init_params,
+                      ITmodel = thismodel, bestfit, init_params, hyperparams = c(2, 0.5)
                       freq_list = c(0.1, 0.3,0.7,1, 3, 7, 10, 15, 30),
                       filename = "FormattedLowerTrachea/capsaicin/Results_"){
 
@@ -124,19 +131,20 @@ Iteration <- function(con_list = c(1,2,5,7), m = 500, n = 100,
     for (q in freq_list){                                                  #iterates through each frequency
       print(paste0("Start ", q, " Hz run"))
       initialresults <- run_mod1(q, init_params, chosenmodel = ITmodel)   #find starting point model results from initial parameters
-      finalparams <- final_drug_params(q, m = m, WconDF, bestfit = bestfit, init_params, initialresults, model = ITmodel)
+      finalparams <- final_drug_params(q, m = m, WconDF, bestfit = bestfit, init_params, 
+                                       initialresults, model = ITmodel, hyper_params = hyperparams)
 
-      finalparamsDF <- c(q, unlist(finalparams[nrow(finalparams),]), use.names = FALSE)               #take initial parameters and start vector for final values
+      finalparamsDF <- c(q, finalparams[nrow(finalparams),])              #take initial parameters and start vector for final values
 
       for(k in seq(1:n)){
-        finalparams <- final_drug_params(finalparams[nrow(finalparams),]$Frequency, m = m, WconDF, bestfit = bestfit, init_params, initialresults, model = ITmodel)
-        finalparamsDF <- rbind(finalparamsDF, c(q, unlist(finalparams[nrow(finalparams),], use.names= FALSE)))
+        finalparams <- final_drug_params(finalparams[nrow(finalparams),][["Frequency"]], m = m, WconDF, bestfit = bestfit, init_params, initialresults, model = ITmodel)
+        finalparamsDF <- rbind(finalparamsDF, c(q, finalparams[nrow(finalparams),]))
       }
       #append results to a single cvs file per index after each frequency
 
       finalparamsDF<-as.data.frame(finalparamsDF)
       names(finalparamsDF)<-c("Freq", names(init_params), "test_freq", "SS")
-      write.table(finalparamsDF, paste0(filename, r, ".csv"), append = TRUE, sep = ",", dec = ".", qmethod = "double", col.names = TRUE)
+      write.table(finalparamsDF, paste0(filename, r, ".csv"), append = TRUE, sep = ",", dec = ".", qmethod = "double", col.names = FALSE)
     }
   }
 }
