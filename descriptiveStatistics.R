@@ -1,5 +1,7 @@
 #This script finds descriptive statistics after model runs.
 
+require(dplyr)
+
 #set working directory function
 modelWD <- function(lowertrachea = TRUE, capsaicin = FALSE){
   if(lowertrachea){
@@ -9,9 +11,9 @@ modelWD <- function(lowertrachea = TRUE, capsaicin = FALSE){
   }
 
   if(capsaicin){
-    directory_name <- paste0(trachea_directory_name, 'control/'
+    directory_name <- paste0(trachea_directory_name, 'control/')
   }else{
-    directory_name <- paste0(trachea_directory_name, 'capsaicin/'
+    directory_name <- paste0(trachea_directory_name, 'capsaicin/')
   }
   return(directory_name)
 }
@@ -45,3 +47,13 @@ findStatistics <- function(filelist, bestfit=bestfit, directory_name=directory_n
 #bestfit <- c("KAach", "KEach", "DVach")  #what unknowns were solved for
 
 #write.csv(descrstats, file = paste0(directory_name, "descrstats_2drugs_UT.csv")) #export
+
+con1_1 <- read.csv("FormattedLowerTrachea/Control/Results0.1Hz_1.csv", header= TRUE)
+names(con1_1)<-c("freq", names(con1_1)[1:15])
+con1_1 <- select(con1_1, bestfit, "freq", "test_freq", "SS")
+
+con1_1 %>%
+  select(bestfit, "freq", "test_freq", "SS") %>%
+  group_by(freq) %>%
+  summarise(myFun(test_freq))
+

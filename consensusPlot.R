@@ -12,7 +12,7 @@ thismodel <- defineModel(ACH_mod="complex", unk_mod="none", effect_mod = "oneNT"
 thismodel[[1]]$model #verifty the model is correct
 
 
-consensus_params <- list(KAach = 0.1050, #first-order
+consensus_params <- c(KAach = 0.1050, #first-order
                          KEach = 0.6771,
                          DVach = 5.8202,
                          EC50ach = 5.383,
@@ -24,7 +24,7 @@ consensus_params <- list(KAach = 0.1050, #first-order
 
                          KAunk = 1, KEunk = 1, DVunk = 7, EC50unk = 5,MAXunk = 1
 )
-init_params <- list(KAach = 2.2434, #inhibition
+init_params <- c(KAach = 2.2434, #inhibition
                          KEach = 1.2903,
                          DVach = 5.9277,
                          EC50ach = 5.383,
