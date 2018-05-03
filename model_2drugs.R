@@ -30,22 +30,22 @@ init_params <- c(KAach = 1.954, #ach model parameters
 thismodel <- defineModel(ACH_mod="complex", unk_mod="none", effect_mod = "oneNT") #what model
 thismodel[[1]]$model                     #check model diagnostic
 #freq0 <- 10                             #what frequency
-#bestfit <- c("KAach", "KEach", "DVach")  #what unknowns are being solved for?
+bestfit <- c("m2max", "chemax", "IC50m2","IC50che")  #what unknowns are being solved for?
 
-Iteration(con_list=2, freq_list = c(0.3,0.7,1,3,7,10,15,30), n=5, ITmodel = thismodel, bestfit = c("m2max", "chemax", "IC50m2","IC50che"),
-          init_params=init_params, filename = "FormattedLowerTrachea/control/complexResultsHz_test")
+Iteration(con_list=2, freq_list = c(0.3,0.7,1,3,7,10,15,30), n=100, ITmodel = thismodel, bestfit = c("m2max", "chemax", "IC50m2","IC50che"),
+         init_params=init_params, filename = "FormattedLowerTrachea/control/complexResultsHz_")
 
 
-#freq_list = c(0.3,0.7,1,3,7,10,15,30)
-# WconDF <- loadNormalizedDF(5, lower = TRUE, dataDF = "con", normDF = "cap")
+# freq_list = c(0.3,0.7,1,3,7,10,15,30)
+# WconDF <- loadNormalizedDF(2, lower = TRUE, dataDF = "con", normDF = "cap")
 # initialresults <- run_mod1(stim_freq = freq0, init_params, chosenmodel = thismodel)
-# finalparams <- final_drug_params(stim_freq = freq0, m = 500, WconDF, bestfit = bestfit, init_params, initialresults, model = thismodel)
-# finalresults <- run_mod1(stim_freq = finalparams[nrow(finalparams),]$Frequency, finalparams[nrow(finalparams),], chosenmodel = thismodel)
-#
+# finalparams <- final_drug_params(stim_freq = freq0, m = 500, WconDF, bestfit = bestfit, init_params, initialresults, model = thismodel, chosen = FALSE)
+# finalresults <- run_mod1(stim_freq = finalparams[nrow(finalparams),][["Frequency"]], finalparams[nrow(finalparams),], chosenmodel = thismodel)
+# 
 # p30<- (ggplot() #plot
 #       + geom_path(aes(x=WconDF$Time, y=WconDF[,paste0("X", freq0, "HZ")]), color="black", alpha = 0.5)
 #       + geom_path(aes(x=initialresults[,"time"], y=initialresults[,"eff2"]), color="violet",size = 1)
-#       #+ geom_path(aes(x=finalresults[,"time"], y=finalresults[,"eff2"]), color="green",size = 1)
+#       + geom_path(aes(x=finalresults[,"time"], y=finalresults[,"eff2"]), color="green",size = 1)
 #       +labs(list(title=paste0(freq0, " HZ Response"), x="Time (s)", y='Normalized Response'))
 #       +theme_bw()
 #       +xlim(0,60)

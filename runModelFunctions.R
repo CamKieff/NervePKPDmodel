@@ -15,10 +15,6 @@ source("defineModel.R")
 
 #a function that takes parameters and runs the model
 run_mod1 <- function(stim_freq, mod_params, chosenmodel = thismodel){
-  if(mod_params[["IC50che"]] > 11) {
-    mod_params[["IC50che"]] <- 11
-  }
-
   parameters <- c(KA1 = mod_params[["KAunk"]],
                   KE1 = mod_params[["KEunk"]],
                   KA2 = mod_params[["KAach"]],
@@ -63,10 +59,11 @@ run_mod1 <- function(stim_freq, mod_params, chosenmodel = thismodel){
 #returns a dataframe of chosen/tested best-fit parameters from the model
 #conDF should be formatted using loadNormalizedDF from "normalizedDF.R"
 final_drug_params <-function(stim_freq, m = 50, conDF, bestfit,
-                             init_params, init_model, model = thismodel,chosen=TRUE){
+                             init_params, init_model, model = thismodel, 
+                             hyper_params = c(2,0.5), chosen=TRUE){
 
-  testexp <- 4     #sum of "squares" exponent (must be even; 2 or 4 are probably optimal)
-  lambda <- 0.5      #learning rate
+  testexp <- hyper_params[1]     #sum of "squares" exponent (must be even; 2 or 4 are probably optimal)
+  lambda <- hyper_params[2]      #learning rate
 
   init_params <- c(init_params, Frequency = stim_freq) #allows for testing of frequency fits
 
@@ -89,9 +86,12 @@ final_drug_params <-function(stim_freq, m = 50, conDF, bestfit,
       testparams[[i]] <- abs(rnorm(n = 1, mean = newparams[[i]], sd = (sqrt(init_params[[i]]^2)*lambda)))
       tested_params <- rbind(tested_params, testparams)
 
-      if(testparams[["IC50che"]] > 11) {
-        testparams[["IC50che"]] <- 11
+      if(testparams[["m2max"]] > 1) {
+        testparams[["m2max"]] <- 1
+      } if(testparams[["chemax"]] > 1) {
+        testparams[["chemax"]] <- 1
       }
+      if(!chosen){print(testparams)} #for debugging
       iteration <- run_mod1(stim_freq = testparams[["Frequency"]], testparams, chosenmodel = model)       #calls run_mod1 to run the model
 
       #calculate Sum of Squares Objective function for the new model
@@ -121,7 +121,7 @@ final_drug_params <-function(stim_freq, m = 50, conDF, bestfit,
 #can also run a single model if con_list is only set to a single index
 Iteration <- function(con_list = c(1,2,5,7), m = 500, n = 100,
                       dataDF = "con", normDF = "cap", lower = TRUE,
-                      ITmodel = thismodel, bestfit, init_params,
+                      ITmodel = thismodel, bestfit, init_params, hyperparams = c(2, 0.5)
                       freq_list = c(0.1, 0.3,0.7,1, 3, 7, 10, 15, 30),
                       filename = "FormattedLowerTrachea/capsaicin/Results_"){
 
@@ -131,7 +131,8 @@ Iteration <- function(con_list = c(1,2,5,7), m = 500, n = 100,
     for (q in freq_list){                                                  #iterates through each frequency
       print(paste0("Start ", q, " Hz run"))
       initialresults <- run_mod1(q, init_params, chosenmodel = ITmodel)   #find starting point model results from initial parameters
-      finalparams <- final_drug_params(q, m = m, WconDF, bestfit = bestfit, init_params, initialresults, model = ITmodel)
+      finalparams <- final_drug_params(q, m = m, WconDF, bestfit = bestfit, init_params, 
+                                       initialresults, model = ITmodel, hyper_params = hyperparams)
 
       finalparamsDF <- c(q, finalparams[nrow(finalparams),])              #take initial parameters and start vector for final values
 
