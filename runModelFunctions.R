@@ -141,11 +141,9 @@ Iteration <- function(con_list = c(1,2,5,7), m = 500, n = 100,
         finalparams <- final_drug_params(finalparams[nrow(finalparams),][["Frequency"]], m = m, WconDF, bestfit = bestfit, init_params, initialresults, model = ITmodel)
         finalparamsDF <- rbind(finalparamsDF, c(q, finalparams[nrow(finalparams),]))
       }
-      #append results to a single cvs file per index after each frequency
-
-      finalparamsDF<-as.data.frame(finalparamsDF)
-      names(finalparamsDF)<-c("Freq", names(init_params), "test_freq", "SS")
-      write.table(finalparamsDF, paste0(filename, r, ".csv"), append = TRUE, sep = ",", dec = ".", qmethod = "double", col.names = FALSE)
+      
+     #append results to a single cvs file per index after each frequency
+      write.table(as.data.frame(finalparamsDF), paste0(filename, r, ".csv"), append = TRUE, sep = ",", dec = ".", qmethod = "double", col.names = FALSE)
     }
   }
 }

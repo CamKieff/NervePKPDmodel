@@ -45,15 +45,25 @@ findStatistics <- function(filelist, bestfit=bestfit, directory_name=directory_n
 #directory_name <- modelWD()
 #testlist <- c("Results_1", "Results_2", "Results_5", "Results_7") #example list of file names
 #bestfit <- c("KAach", "KEach", "DVach")  #what unknowns were solved for
-
 #write.csv(descrstats, file = paste0(directory_name, "descrstats_2drugs_UT.csv")) #export
 
-con1_1 <- read.csv("FormattedLowerTrachea/Control/Results0.1Hz_1.csv", header= TRUE)
-names(con1_1)<-c("freq", names(con1_1)[1:15])
-con1_1 <- select(con1_1, bestfit, "freq", "test_freq", "SS")
+df<- data.frame(NULL)
 
-con1_1 %>%
-  select(bestfit, "freq", "test_freq", "SS") %>%
-  group_by(freq) %>%
-  summarise(myFun(test_freq))
+for(i in c(1,2,5,7)){
+  con1 <- read.csv(paste0("FormattedLowerTrachea/control/complexResultsHz_", i, ".csv"), header= FALSE)
+  names(con1)<-c("","freq", names(init_params), "test_freq", "SS")
+  
+  df<-
+  con1 %>%
+    select(bestfit, "freq","SS") %>%
+    mutate(tissue = i) %>%
+    rbind(df)
+}
 
+aggdata <- mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), mean), var = "mean")
+aggdata <- rbind(aggdata, mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), median), var = "median"))
+aggdata <- rbind(aggdata, mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), sd), var = "sd"))
+
+aggdata <- arrange(aggdata, var, Group.1, Group.2)
+
+write.csv(aggdata, "FormattedLowerTrachea/control/aggregate_results_complex.csv")
