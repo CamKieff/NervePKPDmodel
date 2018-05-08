@@ -34,7 +34,7 @@ vignettes/*.pdf
 
 #Raw Data and Ouput files
 /FormattedUpperTrachea/control/*
-#/FormattedLowerTrachea/control/*
+/FormattedLowerTrachea/control/*
 /FormattedUpperTrachea/capsaicin/*
 /FormattedLowerTrachea/capsaicin/*
 

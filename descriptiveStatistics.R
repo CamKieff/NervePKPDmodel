@@ -48,9 +48,10 @@ findStatistics <- function(filelist, bestfit=bestfit, directory_name=directory_n
 #write.csv(descrstats, file = paste0(directory_name, "descrstats_2drugs_UT.csv")) #export
 
 df<- data.frame(NULL)
+bestfit <- c("KAach", "KEach", "DVach", "test_freq")
 
 for(i in c(1,2,5,7)){
-  con1 <- read.csv(paste0("FormattedLowerTrachea/control/complexResultsHz_", i, ".csv"), header= FALSE)
+  con1 <- read.csv(paste0("FormattedLowerTrachea/control/Results0.1Hz_", i, ".csv"), header= FALSE)
   names(con1)<-c("","freq", names(init_params), "test_freq", "SS")
   
   df<-
@@ -66,4 +67,4 @@ aggdata <- rbind(aggdata, mutate(aggregate.data.frame(df, by=list(df$freq, df$ti
 
 aggdata <- arrange(aggdata, var, Group.1, Group.2)
 
-write.csv(aggdata, "FormattedLowerTrachea/control/aggregate_results_complex.csv")
+write.csv(aggdata, "FormattedLowerTrachea/control/aggregate_results_0.1Hzsimple.csv")

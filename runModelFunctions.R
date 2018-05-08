@@ -93,6 +93,7 @@ final_drug_params <-function(stim_freq, m = 50, conDF, bestfit,
         testparams[["chemax"]] <- 1
       }
       if(!chosen){print(testparams)} #for debugging
+      
       iteration <- run_mod1(stim_freq = testparams[["Frequency"]], testparams, chosenmodel = model)       #calls run_mod1 to run the model
 
       #calculate Sum of Squares Objective function for the new model
@@ -138,7 +139,7 @@ Iteration <- function(con_list = c(1,2,5,7), m = 500, n = 100,
       finalparamsDF <- c(q, finalparams[nrow(finalparams),])              #take initial parameters and start vector for final values
 
       for(k in seq(1:n)){
-        finalparams <- final_drug_params(finalparams[nrow(finalparams),][["Frequency"]], m = m, WconDF, bestfit = bestfit, init_params, initialresults, model = ITmodel)
+        finalparams <- final_drug_params(q, m = m, WconDF, bestfit = bestfit, init_params, initialresults, model = ITmodel)
         finalparamsDF <- rbind(finalparamsDF, c(q, finalparams[nrow(finalparams),]))
       }
       
