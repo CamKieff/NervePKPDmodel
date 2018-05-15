@@ -139,7 +139,8 @@ Iteration <- function(con_list = c(1,2,5,7), m = 500, n = 100,
       finalparamsDF <- c(q, finalparams[nrow(finalparams),])              #take initial parameters and start vector for final values
 
       for(k in seq(1:n)){
-        finalparams <- final_drug_params(q, m = m, WconDF, bestfit = bestfit, init_params, initialresults, model = ITmodel)
+        finalparams <- final_drug_params(q, m = m, WconDF, bestfit = bestfit, init_params, 
+                                         initialresults, model = ITmodel, hyper_params = hyperparams)
         finalparamsDF <- rbind(finalparamsDF, c(q, finalparams[nrow(finalparams),]))
       }
       

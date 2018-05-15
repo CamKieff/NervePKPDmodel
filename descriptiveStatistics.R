@@ -48,10 +48,11 @@ findStatistics <- function(filelist, bestfit=bestfit, directory_name=directory_n
 #write.csv(descrstats, file = paste0(directory_name, "descrstats_2drugs_UT.csv")) #export
 
 df<- data.frame(NULL)
-bestfit <- c("KAach", "KEach", "DVach", "test_freq")
+#bestfit <- c("KAach", "KEach", "DVach", "test_freq")
+bestfit <- c("m2max", "chemax", "IC50m2","IC50che")
 
 for(i in c(1,2,5,7)){
-  con1 <- read.csv(paste0("FormattedLowerTrachea/control/Results0.1Hz_", i, ".csv"), header= FALSE)
+  con1 <- read.csv(paste0("FormattedLowerTrachea/capsaicin/complexResults_", i, ".csv"), header= FALSE)
   names(con1)<-c("","freq", names(init_params), "test_freq", "SS")
   
   df<-
@@ -67,4 +68,49 @@ aggdata <- rbind(aggdata, mutate(aggregate.data.frame(df, by=list(df$freq, df$ti
 
 aggdata <- arrange(aggdata, var, Group.1, Group.2)
 
-write.csv(aggdata, "FormattedLowerTrachea/control/aggregate_results_0.1Hzsimple.csv")
+write.csv(aggdata, "FormattedLowerTrachea/capsaicin/con_aggregate_complex.csv")
+
+
+aggdata <- read.csv("FormattedLowerTrachea/capsaicin/cap_aggregate_complex.csv", header = TRUE)
+#bestfit <- c("KAach", "KEach", "DVach")
+bestfit <- c("m2max", "chemax", "IC50m2","IC50che")
+
+agg_tissues <-
+aggdata %>%
+  select("Group.1", bestfit, "SS", "tissue","var") %>%
+  filter(var =="median", Group.1 %in% c(0.3, 1,3,10)) %>%
+  plyr::rename(., c("Group.1" = "Frequency")) %>%
+  aggregate(by=list(.$tissue), mean) %>%
+  mutate(var = "mean") %>%
+  select(-tissue, -Frequency)
+  
+agg_means <- 
+  agg_tissues %>%
+  select(bestfit) %>%
+  apply(2, FUN=mean)
+
+agg_sem <- 
+  agg_tissues %>%
+  select(bestfit) %>%
+  apply(., 2, function(x) sd(x)/sqrt(length(x)))
+  
+agg_results <- rbind(agg_tissues %>% select(bestfit), agg_means, agg_sem)
+agg_results$name <- c(1,2,5,7, "Mean", "SEM")
+
+parameterlist<- read.csv("FormattedLowerTrachea/evenMoreFinalParams.csv")
+names(parameterlist) <- c("tissue", "control", "complex", names(init_params))
+
+names(df) <- c("blank", "freq1",names(init_params), "freq0","SS")
+p0 <-
+  df %>%
+  filter(freq1 %in% c(0.3, 1,3,10)) %>%
+  mutate(var = seq(1:nrow(.))) %>%
+  ggplot(.)
+         
+p0 <-
+testdf %>%
+filter(freq1 %in% c(10)) %>%
+mutate(var = seq(1:nrow(.))) %>%
+ggplot(.)
+p0 + geom_point(aes(x=chemax, y=IC50che, color=factor(freq1))) #+scale_x_continuous(name ="Frequency (Hz)",breaks = c(0,100,201,302,403),labels=c("0.3","1","3","10",""))
+p0 + geom_point(aes(x=var, y=KEach))
