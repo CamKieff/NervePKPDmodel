@@ -86,11 +86,17 @@ final_drug_params <-function(stim_freq, m = 50, conDF, bestfit,
       testparams[[i]] <- abs(rnorm(n = 1, mean = newparams[[i]], sd = (sqrt(init_params[[i]]^2)*lambda)))
       tested_params <- rbind(tested_params, testparams)
 
-      if(testparams[["m2max"]] > 1) {
-        testparams[["m2max"]] <- 1
+      if(testparams[["m2max"]] > 1) { #hard coded limited for complex model params
+        testparams[["m2max"]] <- 1    #without the max limits, the model fails to converge
       } 
       if(testparams[["chemax"]] > 1) {
         testparams[["chemax"]] <- 1
+      }
+      if(testparams[["IC50che"]] > 10) { #these limits just keep the IC50s in physiologically relevant ranges
+        testparams[["IC50che"]] <- 10    #there is a local minima they can get stuck at around 20
+      } 
+      if(testparams[["IC50m2"]] > 10) {
+        testparams[["IC50m2"]] <- 10
       }
       if(!chosen){print(testparams)} #for debugging
       
