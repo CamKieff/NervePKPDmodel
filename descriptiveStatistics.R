@@ -1,75 +1,31 @@
 #This script finds descriptive statistics after model runs.
-
 require(dplyr)
 
-#set working directory function
-modelWD <- function(lowertrachea = TRUE, capsaicin = FALSE){
-  if(lowertrachea){
-    trachea_directory_name <- 'FormattedLowerTrachea/'
-  }else{
-    trachea_directory_name <- 'FormattedUpperTrachea/'
-  }
-
-  if(capsaicin){
-    directory_name <- paste0(trachea_directory_name, 'control/')
-  }else{
-    directory_name <- paste0(trachea_directory_name, 'capsaicin/')
-  }
-  return(directory_name)
-}
-
-#calculate descriptive statistics for parameter files
-findStatistics <- function(filelist, bestfit=bestfit, directory_name=directory_name){
-  myFun <- function(x) {                    #define descriptive statistics function
-    c(min = min(x), max = max(x),
-      mean = mean(x), median = median(x),
-      std = sd(x))
-  }
-  descrstats <- NULL #set up empty data frame
-
-  for(y in filelist){
-    #import CSV list of final parameters
-    wdata <- read.csv(paste0(directory_name, y, ".csv"), header=FALSE)
-    names(wdata) <- c('','Freq', bestfit, 'meanSS')
-
-    #collects summary statistics for values given in the vector. Rbinds them to our empty data frame
-    for (i in c(bestfit, "meanSS")){
-      testdata <- do.call(rbind, by(wdata[, i], wdata[,"Freq"], myFun))
-      testdata <- cbind(rep(y, nrow(testdata)), rep(i, nrow(testdata)), testdata)
-      descrstats <- rbind(descrstats, testdata)
-    }
-  }
-  return(descrstats)
-}
-
-#directory_name <- modelWD()
-#testlist <- c("Results_1", "Results_2", "Results_5", "Results_7") #example list of file names
-#bestfit <- c("KAach", "KEach", "DVach")  #what unknowns were solved for
-#write.csv(descrstats, file = paste0(directory_name, "descrstats_2drugs_UT.csv")) #export
-
 df<- data.frame(NULL)
-#bestfit <- c("KAach", "KEach", "DVach", "test_freq")
-bestfit <- c("m2max", "chemax", "IC50m2","IC50che")
+bestfit <- c("KAach", "KEach", "DVach", "test_freq")
+#bestfit <- c("m2max", "chemax", "IC50m2","IC50che")
 
 for(i in c(1,2,5,7)){
-  con1 <- read.csv(paste0("FormattedLowerTrachea/capsaicin/complexResults_", i, ".csv"), header= FALSE)
-  names(con1)<-c("","freq", names(init_params), "test_freq", "SS")
+  con1 <- read.csv(paste0("FormattedLowerTrachea/capsaicin/Results0.1Hz_", i, ".csv"), header= FALSE)
+  names(con1)<-c("blank","freq", names(init_params), "test_freq", "SS")
   
   df<-
-  con1 %>%
-    select(bestfit, "freq","SS") %>%
+    con1 %>%
     mutate(tissue = i) %>%
     rbind(df)
 }
-
-aggdata <- mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), mean), var = "mean")
-aggdata <- rbind(aggdata, mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), median), var = "median"))
+df$blank <- NULL
+aggdata <- mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), mean, na.action=TRUE), var = "mean")
+aggdata <- rbind(aggdata, mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), median, na.action=TRUE), var = "median"))
 aggdata <- rbind(aggdata, mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), sd), var = "sd"))
 
 aggdata <- arrange(aggdata, var, Group.1, Group.2)
 
-write.csv(aggdata, "FormattedLowerTrachea/capsaicin/con_aggregate_complex.csv")
+aggdata$freq <- NULL
+aggdata$tissue <- NULL
+names(aggdata) <- c("Freq", "Tissue", names(init_params),"test_freq", "SS", "var")
 
+write.csv(aggdata, "FormattedLowerTrachea/capsaicin/cap_aggregate_0.1Hz.csv")
 
 aggdata <- read.csv("FormattedLowerTrachea/capsaicin/cap_aggregate_complex.csv", header = TRUE)
 #bestfit <- c("KAach", "KEach", "DVach")
@@ -112,5 +68,5 @@ testdf %>%
 filter(freq1 %in% c(10)) %>%
 mutate(var = seq(1:nrow(.))) %>%
 ggplot(.)
-p0 + geom_point(aes(x=chemax, y=IC50che, color=factor(freq1))) #+scale_x_continuous(name ="Frequency (Hz)",breaks = c(0,100,201,302,403),labels=c("0.3","1","3","10",""))
+p0 + geom_point(aes(x=m2max, y=IC50m2, color=factor(freq1))) #+scale_x_continuous(name ="Frequency (Hz)",breaks = c(0,100,201,302,403),labels=c("0.3","1","3","10",""))
 p0 + geom_point(aes(x=var, y=KEach))

@@ -10,6 +10,7 @@
 
 require(ggplot2)
 require(reshape2)
+require(dplyr)
 source("normalizedDF.R")
 source("defineModel.R")
 
@@ -201,4 +202,34 @@ facetgraph <- function(conDF, init_params, bestfit,
   }
 
   p
+}
+
+#run mean, median, sd on stat results by frequency and tissue. Compiles output into a single csv file
+aggregate_stats <- function(con_list = c(1,2,5,7),
+                            input_fileform = "FormattedLowerTrachea/capsaicin/Results0.1Hz_",
+                            output_filename = "FormattedLowerTrachea/capsaicin/cap_aggregate_0.1Hz.csv"){
+  df<- data.frame(NULL)
+  init_params <- c(KAach = 1, KEach = 1,DVach = 6,EC50ach = 5.383,m2max = 0.5,chemax = 0.5,IC50m2 = 7,IC50che = 7,KAunk = 1,KEunk = 1,DVunk = 7,EC50unk = 5,MAXunk = 0)
+  
+  for(i in con_list){
+    con1 <- read.csv(paste0(input_fileform, i, ".csv"), header= FALSE)
+    names(con1)<-c("blank","freq", names(init_params), "test_freq", "SS")
+    
+    df<-
+      con1 %>%
+      mutate(tissue = i) %>%
+      rbind(df)
+  }
+  df$blank <- NULL
+  aggdata <- mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), mean, na.action=TRUE), var = "mean")
+  aggdata <- rbind(aggdata, mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), median, na.action=TRUE), var = "median"))
+  aggdata <- rbind(aggdata, mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), sd), var = "sd"))
+  
+  aggdata <- arrange(aggdata, var, Group.1, Group.2)
+  
+  aggdata$freq <- NULL
+  aggdata$tissue <- NULL
+  plyr::rename(aggdata, c("Group.1" = "Freq", "Group.2" = "Tissue"))
+  
+  write.csv(aggdata, output_filename) #export
 }
