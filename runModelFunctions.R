@@ -161,35 +161,40 @@ Iteration <- function(con_list = c(1,2,5,7), m = 500, n = 100,
 
 #run final_drug_params once for each frequency and create a nice facetwrap graph of the best-fit results
 #or plot consensus results
-facetgraph <- function(conDF, init_params, bestfit,
-                       freq_list = c(0.1, 0.3, 0.7, 1, 3, 10, 15, 30),
+facetgraph <- function(conDF, init_params, consensus_params, bestfit, 
+                       freq_list = c(0.1, 0.3, 0.7, 1, 3, 10, 15, 30), 
                        consensus = FALSE, chosenmodel = thismodel){
   facetDF <-NULL
   for (i in freq_list){
     working_freq <- i
     if(working_freq < 0.2){
-      initialresults <- run_mod1(stim_freq = working_freq, init_params, chosenmodel = chosenmodel)
+      initialresults <- run_mod1(stim_freq = working_freq, init_params, chosenmodel = thismodel)
+      consensusresults <- run_mod1(stim_freq = working_freq, consensus_params, chosenmodel = thismodel2)
       working_freq <- 0.1
     } else{
-      initialresults <- run_mod1(stim_freq = working_freq, init_params, chosenmodel = chosenmodel)
+      initialresults <- run_mod1(stim_freq = working_freq, init_params, chosenmodel = thismodel)
+      consensusresults <- run_mod1(stim_freq = working_freq, consensus_params, chosenmodel = thismodel2)
+      
     }
     if(consensus == TRUE){
-      plotDF <- data.frame(rep(working_freq, length(initialresults)), initialresults[,"time"], conDF[1:length(initialresults[,"time"]),paste0("X", working_freq, "HZ")], initialresults[,"eff2"])
+      plotDF <- data.frame(rep(working_freq, length(initialresults)), initialresults[,"time"], conDF[1:length(initialresults[,"time"]),paste0("X", working_freq, "HZ")], initialresults[,"eff2"],consensusresults[,"eff2"])
     } else{
       finalparams <- final_drug_params(stim_freq = working_freq, m = 500, conDF, bestfit = bestfit, init_params, initialresults)
       finalresults <- run_mod1(stim_freq = working_freq, finalparams[nrow(finalparams),], chosenmodel = chosenmodel)
       plotDF <- data.frame(rep(working_freq, length(finalresults)), initialresults[,"time"], conDF[1:length(initialresults[,"time"]),paste0("X", working_freq, "HZ")], initialresults[,"eff2"], finalresults[,"eff2"])
     }
-
+    
     facetDF <- rbind(plotDF, facetDF)
   }
   if(consensus == TRUE){
-    colnames(facetDF)<-c("Freq", "Time", "Raw", "Consensus")
+    colnames(facetDF)<-c("Freq", "Time", "Raw", "Initial", "Consensus")
     p <- (ggplot(facetDF)
           + geom_line(aes(x=Time, y=Raw), color="black", alpha = 0.5)
-          + geom_line(aes(x=Time, y=Consensus), color="red",size = 1)
+          + geom_line(aes(x=Time, y=Consensus), color="blue",size = 1)
+          + geom_line(aes(x=Time, y=Initial), color="red",size = 1)
           #+ facet_wrap(~ Freq, scales="free", ncol=3)
           + facet_wrap(~ Freq, ncol=3)
+          + scale_y_continuous(limits = c(0, 1))
           + theme_bw()
     )
   } else{
@@ -202,14 +207,15 @@ facetgraph <- function(conDF, init_params, bestfit,
           + theme_bw()
     )
   }
-
+  
   p
 }
 
+
 #run mean, median, sd on stat results by frequency and tissue. Compiles output into a single csv file
 aggregate_stats <- function(con_list = c(1,2,5,7),
-                            input_fileform = "FormattedLowerTrachea/capsaicin/Results0.1Hz_",
-                            output_filename = "FormattedLowerTrachea/capsaicin/cap_aggregate_0.1Hz.csv"){
+                        input_fileform = "FormattedLowerTrachea/capsaicin/Results0.1Hz_",
+                        output_filename = "FormattedLowerTrachea/capsaicin/cap_aggregate_0.1Hz.csv"){
   df<- data.frame(NULL)
   init_params <- c(KAach = 1, KEach = 1,DVach = 6,EC50ach = 5.383,m2max = 0.5,chemax = 0.5,IC50m2 = 7,IC50che = 7,KAunk = 1,KEunk = 1,DVunk = 7,EC50unk = 5,MAXunk = 0)
   

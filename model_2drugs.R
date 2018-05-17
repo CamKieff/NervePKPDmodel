@@ -34,11 +34,12 @@ thismodel[[1]]$model                     #check model diagnostic
 freq0 <- 0.1                            #what frequency
 bestfit <- c("m2max", "chemax", "IC50m2","IC50che")  #what unknowns are being solved for?
 
-init_params <- parameterlist[which(parameterlist$control == 1 & parameterlist$complex ==1 & parameterlist$tissue == 1),]
+parameterlist <- read.csv("FormattedLowerTrachea/finalParameters.csv") %>% select(-X)
+init_params <- parameterlist[which(parameterlist$Capsaicin == 1 & parameterlist$Complex ==1 & parameterlist$Tissue == 1),]
 
 freq_list = c(0.3,0.7,1,3,7,10,15,30)
-WconDF <- loadNormalizedDF(1, lower = TRUE, dataDF = "cap", normDF = "cap")
-initialresults <- run_mod1(stim_freq = 0.0968, init_params, chosenmodel = thismodel)
+WconDF <- loadNormalizedDF(2, lower = TRUE, dataDF = "con", normDF = "cap")
+initialresults <- run_mod1(stim_freq = 0.1035, init_params, chosenmodel = thismodel)
 finalparams <- final_drug_params(stim_freq = freq0, m = 500, WconDF, bestfit = bestfit, init_params, initialresults, hyper_params = c(2,0.1),model = thismodel, chosen = TRUE)
 finalresults <- run_mod1(stim_freq = finalparams[nrow(finalparams),][["Frequency"]], finalparams[nrow(finalparams),], chosenmodel = thismodel)
 
