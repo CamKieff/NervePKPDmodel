@@ -8,8 +8,10 @@
 #variables cannot be controlled from outside some of the function wrappers (m, freq_list?)
 #initial parameters, model definition
 
+require(RxODE)
 require(ggplot2)
 require(reshape2)
+require(plyr)
 require(dplyr)
 source("normalizedDF.R")
 source("defineModel.R")
@@ -225,11 +227,11 @@ aggregate_stats <- function(con_list = c(1,2,5,7),
   aggdata <- rbind(aggdata, mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), median, na.action=TRUE), var = "median"))
   aggdata <- rbind(aggdata, mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), sd), var = "sd"))
   
-  aggdata <- arrange(aggdata, var, Group.1, Group.2)
-  
-  aggdata$freq <- NULL
-  aggdata$tissue <- NULL
-  plyr::rename(aggdata, c("Group.1" = "Freq", "Group.2" = "Tissue"))
+  aggdata <- 
+    aggdata %>%
+    arrange(var, Group.1, Group.2) %>%
+    select(-freq, -tissue) %>%
+    plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue"))
   
   write.csv(aggdata, output_filename) #export
 }

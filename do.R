@@ -1,5 +1,6 @@
 library(RxODE)
 library(ggplot2)
+library(plyr)
 library(dplyr)
 source("normalizedDF.R")
 source("defineModel.R")
@@ -47,7 +48,7 @@ aggregate_stats(con_list = c(1,2,5,7), input_fileform = "FormattedLowerTrachea/c
 
 #Control 0.3, 1, 3, 10 Hz
 Iteration(con_list=c(1,2,5,7), freq_list = c(0.3,1,3,10), n=100, ITmodel = thismodel, bestfit = c("KAach", "KEach", "DVach"),
-          init_params=init_params, dataDF = "con", hyperparams = c(2, 0.1), 
+          init_params=init_params, dataDF = "con", hyperparams = c(2, 0.1),
           filename = "FormattedLowerTrachea/control/ResultsHz_")
 aggregate_stats(con_list = c(1,2,5,7), input_fileform = "FormattedLowerTrachea/control/ResultsHz_",
                 output_filename = "FormattedLowerTrachea/control/con_aggregate_Hz.csv")
@@ -63,16 +64,16 @@ init_df <- read.csv("FormattedLowerTrachea/capsaicin/cap_aggregate_0.1Hz.csv", h
 
 #File1 - capsaicin - complex
 Iteration(con_list=1, freq_list = c(0.3,1,3,10), n=100, ITmodel = thismodel, bestfit = c("m2max", "chemax", "IC50m2","IC50che"),
-          init_params=init_df[1,], dataDF="cap", hyperparams = c(2, 0.1), filename = "FormattedLowerTrachea/capsaicin/complexResults_")
+          init_params=unlist(init_df[1,]), dataDF="cap", hyperparams = c(2, 0.1), filename = "FormattedLowerTrachea/capsaicin/complexResults_")
 #File2 - capsaicin - complex
 Iteration(con_list=2, freq_list = c(0.3,1,3,10), n=100, ITmodel = thismodel, bestfit = c("m2max", "chemax", "IC50m2","IC50che"),
-          init_params=init_df[2,], dataDF="cap", hyperparams = c(2, 0.1), filename = "FormattedLowerTrachea/capsaicin/complexResults_")
+          init_params=unlist(init_df[2,]), dataDF="cap", hyperparams = c(2, 0.1), filename = "FormattedLowerTrachea/capsaicin/complexResults_")
 #File5 - capsaicin - complex
 Iteration(con_list=5, freq_list = c(0.3,1,3,10), n=100, ITmodel = thismodel, bestfit = c("m2max", "chemax", "IC50m2","IC50che"),
-          init_params=init_df[3,], dataDF="cap", hyperparams = c(2, 0.1), filename = "FormattedLowerTrachea/capsaicin/complexResults_")
+          init_params=unlist(init_df[3,]), dataDF="cap", hyperparams = c(2, 0.1), filename = "FormattedLowerTrachea/capsaicin/complexResults_")
 #File7 - capsaicin - complex
 Iteration(con_list=7, freq_list = c(0.3,1,3,10), n=100, ITmodel = thismodel, bestfit = c("m2max", "chemax", "IC50m2","IC50che"),
-          init_params=init_df[4,], dataDF="cap", hyperparams = c(2, 0.1), filename = "FormattedLowerTrachea/capsaicin/complexResults_")
+          init_params=unlist(init_df[4,]), dataDF="cap", hyperparams = c(2, 0.1), filename = "FormattedLowerTrachea/capsaicin/complexResults_")
 
 aggregate_stats(con_list = c(1,2,5,7), input_fileform = "FormattedLowerTrachea/capsaicin/complexResults_",
                 output_filename = "FormattedLowerTrachea/capsaicin/cap_aggregate_complex.csv")
@@ -84,18 +85,51 @@ init_df <- read.csv("FormattedLowerTrachea/control/con_aggregate_0.1Hz.csv", hea
 
 #File1 - control - complex
 Iteration(con_list=1, freq_list = c(0.3,1,3,10), n=100, ITmodel = thismodel, bestfit = c("m2max", "chemax", "IC50m2","IC50che"),
-          init_params=init_df[1,], dataDF="con", hyperparams = c(2, 0.1), filename = "FormattedLowerTrachea/control/complexResults_")
+          init_params=unlist(init_df[1,]), dataDF="con", hyperparams = c(2, 0.1), filename = "FormattedLowerTrachea/control/complexResults_")
 #File2 - control - complex
 Iteration(con_list=2, freq_list = c(0.3,1,3,10), n=100, ITmodel = thismodel, bestfit = c("m2max", "chemax", "IC50m2","IC50che"),
-          init_params=init_df[2,], dataDF="con", hyperparams = c(2, 0.1), filename = "FormattedLowerTrachea/control/complexResults_")
+          init_params=unlist(init_df[2,]), dataDF="con", hyperparams = c(2, 0.1), filename = "FormattedLowerTrachea/control/complexResults_")
 #File5 - control - complex
 Iteration(con_list=5, freq_list = c(0.3,1,3,10), n=100, ITmodel = thismodel, bestfit = c("m2max", "chemax", "IC50m2","IC50che"),
-          init_params=init_df[3,], dataDF="con", hyperparams = c(2, 0.1), filename = "FormattedLowerTrachea/control/complexResults_")
+          init_params=unlist(init_df[3,]), dataDF="con", hyperparams = c(2, 0.1), filename = "FormattedLowerTrachea/control/complexResults_")
 #File7 - control - complex
 Iteration(con_list=7, freq_list = c(0.3,1,3,10), n=100, ITmodel = thismodel, bestfit = c("m2max", "chemax", "IC50m2","IC50che"),
-          init_params=init_df[4,], dataDF="con", hyperparams = c(2, 0.1), filename = "FormattedLowerTrachea/control/complexResults_")
+          init_params=unlist(init_df[4,]), dataDF="con", hyperparams = c(2, 0.1), filename = "FormattedLowerTrachea/control/complexResults_")
 
 aggregate_stats(con_list = c(1,2,5,7), input_fileform = "FormattedLowerTrachea/control/complexResults_",
                 output_filename = "FormattedLowerTrachea/control/con_aggregate_complex.csv")
 
 #statistics go here.
+cap_simple <- 
+  read.csv("FormattedLowerTrachea/capsaicin/cap_aggregate_Hz.csv", header = TRUE) %>%
+  filter(var =="median") %>%
+  #plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue")) %>% #aggregate_stats should do this
+  aggregate(by=list(.$Tissue), mean) %>%
+  mutate(Capsaicin = 1, Complex = 0) %>%
+  select(-Group.1, -X, -Freq, -var)
+
+con_simple <- 
+  read.csv("FormattedLowerTrachea/control/con_aggregate_Hz.csv", header = TRUE) %>%
+  filter(var =="median") %>%
+  #plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue")) %>%
+  aggregate(by=list(.$Tissue), FUN=mean) %>%
+  mutate(Capsaicin = 0, Complex = 0) %>%
+  select(-Group.1, -X, -Freq, -var)
+
+cap_complex <- 
+  read.csv("FormattedLowerTrachea/capsaicin/cap_aggregate_complex.csv", header = TRUE) %>%
+  filter(var =="median") %>%
+  #plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue")) %>%
+  aggregate(by=list(.$Tissue), mean) %>%
+  mutate(Capsaicin = 1, Complex = 1) %>%
+  select(-Group.1, -X, -Freq, -var)
+
+con_complex <- 
+  read.csv("FormattedLowerTrachea/control/con_aggregate_complex.csv", header = TRUE) %>%
+  filter(var =="median") %>%
+  #plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue")) %>%
+  aggregate(by=list(.$Tissue), mean) %>%
+  mutate(Capsaicin = 0, Complex = 1) %>%
+  select(-Group.1, -X, -Freq, -var)
+
+write.csv(rbind(cap_simple, con_simple, cap_complex, con_complex), "FormattedLowerTrachea/finalParameters.csv")

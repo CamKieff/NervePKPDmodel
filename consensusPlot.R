@@ -6,44 +6,22 @@ source("defineModel.R")
 #produces graphable consensus data
 bestfit <- c("KAach", "KEach", "DVach")  #what unknowns are being solved for?
 con_list = c(1,2,5,7) #List of indeces for the files used in this analysis
-freq_list <- c(0.1, 0.3,0.7,1, 3, 7, 10, 15, 30)
+
 #Define a model (or more) to run and plot
-thismodel <- defineModel(ACH_mod="complex", unk_mod="none", effect_mod = "oneNT") #what model
-thismodel[[1]]$model #verifty the model is correct
-thismodel2 <- defineModel(ACH_mod="simple", unk_mod="none", effect_mod = "oneNT") #what model
-thismodel2[[1]]$model #verifty the model is correct
+thismodel <- defineModel(ACH_mod="complex", unk_mod="none", effect_mod = "oneNT") 
+thismodel[[1]]$model 
+thismodel2 <- defineModel(ACH_mod="simple", unk_mod="none", effect_mod = "oneNT") 
+thismodel2[[1]]$model 
 
-# consensus_params <- c(KAach = 0.1050, #first-order
-#                          KEach = 0.6771,
-#                          DVach = 5.8202,
-#                          EC50ach = 5.383,
-# 
-#                          m2max = 0.5,
-#                          chemax = 0.5,
-#                          IC50m2 = 6,
-#                          IC50che = 6,
-# 
-#                          KAunk = 1, KEunk = 1, DVunk = 7, EC50unk = 5,MAXunk = 1
-# )
-# init_params <- c(KAach = 2.2434, #inhibition
-#                          KEach = 1.2903,
-#                          DVach = 5.9277,
-#                          EC50ach = 5.383,
-# 
-#                          m2max = 0.9786,
-#                          chemax = 0.6872,
-#                          IC50m2 = 6.4724,
-#                          IC50che = 7.4854,
-# 
-#                          KAunk = 1, KEunk = 1, DVunk = 7, EC50unk = 5,MAXunk = 1
-#                          )
+parameterlist <- read.csv("FormattedLowerTrachea/finalParameters.csv") %>% select(-X)
 
-tissue_num <- 7
+tissue_num <- 1
+freq_list <- c(0.103, 0.3,1, 3, 10) #0.1 Hz freq will be tissue specific
 
-consensus_params <- parameterlist[which(parameterlist$control == 1 & parameterlist$complex ==0 & parameterlist$tissue == tissue_num),]
-init_params <- parameterlist[which(parameterlist$control == 1 & parameterlist$complex ==1 & parameterlist$tissue == tissue_num),]
-
-freq_list <- c(0.0999, 0.3,1, 3, 10)
+#First-order
+consensus_params <- parameterlist[which(parameterlist$Capsaicin == 0 & parameterlist$Complex == 0 & parameterlist$Tissue == tissue_num),]
+#Inhibition
+init_params <- parameterlist[which(parameterlist$Capsaicin == 0 & parameterlist$Complex == 1 & parameterlist$Tissue == tissue_num),]
 
 WconDF <- loadNormalizedDF(tissue_num, lower = TRUE, dataDF = "con", normDF = "cap")
 facetgraph(conDF = WconDF, init_params= init_params, consensus_params = consensus_params, freq_list = freq_list, consensus = TRUE)
@@ -104,7 +82,7 @@ facetgraph <- function(conDF, init_params, consensus_params, bestfit, freq_list 
     p <- (ggplot(facetDF)
           + geom_line(aes(x=Time, y=Raw), color="black", alpha = 0.5)
           + geom_line(aes(x=Time, y=Consensus), color="blue",size = 1)
-          #+ geom_line(aes(x=Time, y=Initial), color="red",size = 1)
+          + geom_line(aes(x=Time, y=Initial), color="red",size = 1)
           #+ facet_wrap(~ Freq, scales="free", ncol=3)
           + facet_wrap(~ Freq, ncol=3)
           + scale_y_continuous(limits = c(0, 1))
