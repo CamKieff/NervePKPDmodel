@@ -99,7 +99,7 @@ Iteration(con_list=7, freq_list = c(0.3,1,3,10), n=100, ITmodel = thismodel, bes
 aggregate_stats(con_list = c(1,2,5,7), input_fileform = "FormattedLowerTrachea/control/complexResults_",
                 output_filename = "FormattedLowerTrachea/control/con_aggregate_complex.csv")
 
-#statistics go here.
+#statistics for all frequnecy tissue specific numbers. Creates a single final parameter file.
 cap_simple <- 
   read.csv("FormattedLowerTrachea/capsaicin/cap_aggregate_Hz.csv", header = TRUE) %>%
   filter(var =="median") %>%
@@ -133,3 +133,42 @@ con_complex <-
   select(-Group.1, -X, -Freq, -var)
 
 write.csv(rbind(cap_simple, con_simple, cap_complex, con_complex), "FormattedLowerTrachea/finalParameters.csv")
+
+#statistics for frequency specific results for each treatment. Creates a separate file for each treatment
+#find frequency specific results - control - simple model
+freq_results <- rbind(read.csv("FormattedLowerTrachea/control/con_aggregate_0.1Hz.csv", header = TRUE), 
+                      read.csv("FormattedLowerTrachea/control/con_aggregate_Hz.csv")) %>%
+  filter(var == "median") %>%
+  select(Freq, KAach, KEach, DVach) 
+
+meanRes <- rbind(mutate(aggregate(freq_results, by=list(freq_results$Freq), mean), var ="mean"),
+                 mutate(aggregate(freq_results, by=list(freq_results$Freq), function(x) sd(x)/sqrt(4)), var ="SEM"))
+write.csv(meanRes, "FormattedLowerTrachea/control/con_frequency_Hz.csv")
+
+#find frequency specific results - capsaicin - simple model
+freq_results <- rbind(read.csv("FormattedLowerTrachea/capsaicin/cap_aggregate_0.1Hz.csv", header = TRUE), 
+                      read.csv("FormattedLowerTrachea/capsaicin/cap_aggregate_Hz.csv")) %>%
+  filter(var == "median") %>%
+  select(Freq, KAach, KEach, DVach) 
+
+meanRes <- rbind(mutate(aggregate(freq_results, by=list(freq_results$Freq), mean), var ="mean"),
+                 mutate(aggregate(freq_results, by=list(freq_results$Freq), function(x) sd(x)/sqrt(4)), var ="SEM"))
+write.csv(meanRes, "FormattedLowerTrachea/capsaicin/cap_frequency_Hz.csv")
+
+#find frequency specific results - capsaicin - complex model
+freq_results <- read.csv("FormattedLowerTrachea/capsaicin/cap_aggregate_complex.csv") %>%
+  filter(var == "median") %>%
+  select(Freq, m2max, chemax, IC50m2, IC50che) 
+
+meanRes <- rbind(mutate(aggregate(freq_results, by=list(freq_results$Freq), mean), var ="mean"),
+                 mutate(aggregate(freq_results, by=list(freq_results$Freq), function(x) sd(x)/sqrt(4)), var ="SEM"))
+write.csv(meanRes, "FormattedLowerTrachea/capsaicin/cap_frequency_complex.csv")
+
+#find frequency specific results - control - complex model
+freq_results <- read.csv("FormattedLowerTrachea/control/cap_aggregate_complex.csv") %>%
+  filter(var == "median") %>%
+  select(Freq, m2max, chemax, IC50m2, IC50che) 
+
+meanRes <- rbind(mutate(aggregate(freq_results, by=list(freq_results$Freq), mean), var ="mean"),
+                 mutate(aggregate(freq_results, by=list(freq_results$Freq), function(x) sd(x)/sqrt(4)), var ="SEM"))
+write.csv(meanRes, "FormattedLowerTrachea/capsaicin/cap_frequency_complex.csv")

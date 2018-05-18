@@ -39,21 +39,8 @@ aggdata %>%
   aggregate(by=list(.$tissue), mean) %>%
   mutate(var = "mean") %>%
   select(-tissue, -Frequency)
-  
-agg_means <- 
-  agg_tissues %>%
-  select(bestfit) %>%
-  apply(2, FUN=mean)
 
-agg_sem <- 
-  agg_tissues %>%
-  select(bestfit) %>%
-  apply(., 2, function(x) sd(x)/sqrt(length(x)))
-  
-agg_results <- rbind(agg_tissues %>% select(bestfit), agg_means, agg_sem)
-agg_results$name <- c(1,2,5,7, "Mean", "SEM")
-
-parameterlist<- read.csv("FormattedLowerTrachea/evenMoreFinalParams.csv")
+parameterlist<- read.csv("FormattedLowerTrachea/finalParameters.csv")
 names(parameterlist) <- c("tissue", "control", "complex", names(init_params))
 
 df <- read.csv("FormattedLowerTrachea/control/ResultsHz_5.csv")
