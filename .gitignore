@@ -32,14 +32,12 @@ vignettes/*.pdf
 *.utf8.md
 *.knit.md
 
-#Raw Data and Ouput files
-/FormattedUpperTrachea/control/*
-/FormattedLowerTrachea/control/*
-/FormattedUpperTrachea/capsaicin/*
-/FormattedLowerTrachea/capsaicin/*
+# Raw Data and Ouput files
+/FormattedUpperTrachea/*
+/FormattedLowerTrachea/*
+/mod_files/*
 
-#Output folders from compiled models
+# Output folders from compiled models
 *.d
 *.c
 *.dll
-FormattedLowerTrachea/evenMoreFinalParams.csv
