@@ -18,10 +18,11 @@ parameterlist <- read.csv("FormattedLowerTrachea/finalParameters.csv") %>% selec
 AUCresults <- NULL
 SSresults <- NULL
 
+#0.10312	0.103568	0.099246	0.099837
 tissue_num <- 7
 capsaicin_num <- 0
-zeropoint1 <- 0.0998
-#freq_list <- c(0.103, 0.3,1, 3, 10) #0.1 Hz freq will be tissue specific
+zeropoint1 <- 0.099837
+freq_list <- c(zeropoint1, 0.3,1, 3, 10) #0.1 Hz freq will be tissue specific
 
 #First-order
 consensus_params <- parameterlist[which(parameterlist$Capsaicin == capsaicin_num & parameterlist$Complex == 0 & parameterlist$Tissue == tissue_num),]
@@ -29,7 +30,7 @@ consensus_params <- parameterlist[which(parameterlist$Capsaicin == capsaicin_num
 init_params <- parameterlist[which(parameterlist$Capsaicin == capsaicin_num & parameterlist$Complex == 1 & parameterlist$Tissue == tissue_num),]
 
 WconDF <- loadNormalizedDF(tissue_num, lower = TRUE, dataDF = "con", normDF = "cap")
-#facetgraph(conDF = WconDF, init_params= init_params, consensus_params = consensus_params, freq_list = freq_list, consensus = TRUE)
+facetgraph(conDF = WconDF, init_params= init_params, consensus_params = consensus_params, freq_list = freq_list, consensus = TRUE)
 
 #run the code below this line to find the AUC for the raw data, and both models
 freq_list <- c(zeropoint1, 0.3,7,1, 3,7, 10,15,30) #0.1 Hz freq will be tissue specific
@@ -56,10 +57,7 @@ colSums(consensus_models*0.02),
 colSums(inhibition_models*0.02))) %>%
   select(X0.1HZ, X0.3HZ, X1HZ, X3HZ, X10HZ) %>%
   mutate(Tissue = tissue_num, var = c("Control", "Simple", "Complex"), Capsaicin = capsaicin_num)
-
 AUCresults <- rbind(AUCresults, tissue_sums)
-
-#write.csv(AUCresults, "FormattedLowerTrachea/AUCresults.csv")
 
 #find the sum of squared differences
 SS_sums <- as.data.frame(rbind(colSums((WconDF[1:3001,] - consensus_models)^2),
@@ -68,4 +66,6 @@ colSums((WconDF[1:3001,] - inhibition_models)^2))) %>%
   mutate(Tissue = tissue_num, var = c("Simple", "Complex"), Capsaicin = capsaicin_num)
 
 SSresults <- rbind(SSresults, SS_sums)
-#write.csv(SSresults, "FormattedLowerTrachea/SSresults.csv")
+
+# write.csv(AUCresults, "FormattedLowerTrachea/AUCresults.csv")
+# write.csv(SSresults, "FormattedLowerTrachea/SSresults.csv")

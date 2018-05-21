@@ -104,7 +104,6 @@ con_simple <-
   freq_results <- rbind(read.csv("FormattedLowerTrachea/control/con_aggregate_0.1Hz.csv", header = TRUE), 
                         read.csv("FormattedLowerTrachea/control/con_aggregate_Hz.csv")) %>%
   filter(var =="median") %>%
-  #plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue")) %>%
   aggregate(by=list(.$Tissue), FUN=mean) %>%
   mutate(Capsaicin = 0, Complex = 0) %>%
   select(-Group.1, -X, -Freq, -var)
@@ -113,7 +112,6 @@ cap_simple <-
   rbind(read.csv("FormattedLowerTrachea/capsaicin/cap_aggregate_0.1Hz.csv", header = TRUE), 
         read.csv("FormattedLowerTrachea/capsaicin/cap_aggregate_Hz.csv")) %>%
   filter(var =="median") %>%
-  #plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue")) %>% #aggregate_stats should do this
   aggregate(by=list(.$Tissue), mean) %>%
   mutate(Capsaicin = 1, Complex = 0) %>%
   select(-Group.1, -X, -Freq, -var)
@@ -121,7 +119,6 @@ cap_simple <-
 cap_complex <- 
   read.csv("FormattedLowerTrachea/capsaicin/cap_aggregate_complex.csv", header = TRUE) %>%
   filter(var =="median") %>%
-  #plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue")) %>%
   aggregate(by=list(.$Tissue), mean) %>%
   mutate(Capsaicin = 1, Complex = 1) %>%
   select(-Group.1, -X, -Freq, -var)
@@ -129,7 +126,6 @@ cap_complex <-
 con_complex <- 
   read.csv("FormattedLowerTrachea/control/con_aggregate_complex.csv", header = TRUE) %>%
   filter(var =="median") %>%
-  #plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue")) %>%
   aggregate(by=list(.$Tissue), mean) %>%
   mutate(Capsaicin = 0, Complex = 1) %>%
   select(-Group.1, -X, -Freq, -var)

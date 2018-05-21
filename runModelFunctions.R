@@ -241,3 +241,70 @@ aggregate_stats <- function(con_list = c(1,2,5,7),
   
   write.csv(aggdata, output_filename) #export
 }
+
+
+# function to try and fit all frequencies at one.  Finds the SS error for all frequencies
+# and scales them based on the AUC response
+find_allfreq_params <-function(freq_list = c(0.1, 0.3, 1, 3, 10), m = 50, conDF, bestfit,
+                               init_params, model = thismodel, hyper_params = c(2,0.1)){
+  
+  testexp <- hyper_params[1]     #sum of "squares" exponent (must be even; 2 or 4 are probably optimal)
+  lambda <- hyper_params[2]      #learning rate
+  
+  #init_params <- c(init_params, Frequency = stim_freq) #allows for testing of frequency fits
+  
+  workingdata <- 
+    WconDF %>%
+    select(Time, paste0("X", c(0.1, freq_list[-1]), "HZ")) %>%
+    filter(.$Time <= 60)
+  
+  raw_AUC <- colSums(workingdata) #find control data column sums for scaling
+  
+  # find SS errors for initial parameters to find a number to beat
+  initialresults <- workingdata$Time
+  for (q in c(0.1, 0.3,1,3,10)){                                                  
+    init_results1 <- run_mod1(q, init_params, chosenmodel = thismodel)   
+    initialresults <- cbind(initialresults, init_results1[,"eff2"])
+  }
+  names(initialresults) <- names(workingdata)
+  
+  SSdif_df <- (initialresults - workingdata)^2 
+  numberToBeat <- mean((colSums(SSdif_df)/raw_AUC)[-1]) #initial average of sum of squares scaled to AUC
+  
+  newparams <- init_params           #stores current best-fit parameters
+  
+  for (j in 1:m){                    #number of iterations to find best fit
+    for(i in bestfit){
+      testparams <- newparams
+      testparams[[i]] <- abs(rnorm(n = 1, mean = newparams[[i]], sd = (sqrt(init_params[[i]]^2)*lambda)))
+      
+      if(testparams[["m2max"]] > 1) { #hard coded limited for complex model params
+        testparams[["m2max"]] <- 1    #without the max limits, the model fails to converge
+      } 
+      if(testparams[["chemax"]] > 1) {
+        testparams[["chemax"]] <- 1
+      }
+      if(testparams[["IC50che"]] > 10) { #these limits just keep the IC50s in physiologically relevant ranges
+        testparams[["IC50che"]] <- 10    #there is a local minima they can get stuck at around 20
+      } 
+      if(testparams[["IC50m2"]] > 10) {
+        testparams[["IC50m2"]] <- 10
+      }
+      
+      iteration_results <- workingdata$Time
+      for (q in freq_list){                                                  
+        init_results1 <- run_mod1(q, testparams, chosenmodel = thismodel)   
+        iteration_results <- cbind(iteration_results, init_results1[,"eff2"])
+      }
+      names(iteration_results) <- names(workingdata)
+      
+      SSdif_df <-(iteration_results - workingdata)^2
+      newNumber <- mean((colSums(SSdif_df)/raw_AUC)[-1])
+       
+      if(newNumber < numberToBeat) { #test if the SS for the new model is better than the old model
+        newparams[i] <- testparams[i]
+      } 
+    }
+  }
+  return(newparams) #return the best fit parameters. 
+}

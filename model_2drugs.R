@@ -40,7 +40,7 @@ init_params <- parameterlist[which(parameterlist$Capsaicin == 1 & parameterlist$
 freq_list = c(0.3,0.7,1,3,7,10,15,30)
 WconDF <- loadNormalizedDF(2, lower = TRUE, dataDF = "con", normDF = "cap")
 initialresults <- run_mod1(stim_freq = 0.1035, init_params, chosenmodel = thismodel)
-finalparams <- final_drug_params(stim_freq = freq0, m = 500, WconDF, bestfit = bestfit, init_params, initialresults, hyper_params = c(2,0.1),model = thismodel, chosen = TRUE)
+finalparams <- final_drug_params(stim_freq = freq0, m = 500, WconDF, bestfit = bestfit, init_params, init_model=initialresults, hyper_params = c(2,0.1),model = thismodel, chosen = TRUE)
 finalresults <- run_mod1(stim_freq = finalparams[nrow(finalparams),][["Frequency"]], finalparams[nrow(finalparams),], chosenmodel = thismodel)
 
 p30<- (ggplot() #plot
