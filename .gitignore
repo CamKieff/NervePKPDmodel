@@ -33,11 +33,13 @@ vignettes/*.pdf
 *.knit.md
 
 # Raw Data and Ouput files
-/FormattedUpperTrachea/*
-/FormattedLowerTrachea/*
-/mod_files/*
+/FormattedUpperTrachea/
+/FormattedLowerTrachea/
+/mod_files/
 
 # Output folders from compiled models
 *.d
 *.c
 *.dll
+FormattedLowerTrachea/SSresults.csv
+FormattedLowerTrachea/AUCresults.csv

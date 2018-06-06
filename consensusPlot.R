@@ -17,12 +17,12 @@ thismodel2[[1]]$model
 parameterlist <- read.csv("FormattedLowerTrachea/finalParameters.csv") %>% select(-X)
 AUCresults <- NULL
 SSresults <- NULL
-
-#0.10312	0.103568	0.099246	0.099837
+#0.096809	0.103418	0.103942	0.096586 cap 0.1 hz
+#0.10312	0.103568	0.099246	0.099837 con 0.1 hz
 tissue_num <- 7
 capsaicin_num <- 0
 zeropoint1 <- 0.099837
-freq_list <- c(zeropoint1, 0.3,1, 3, 10) #0.1 Hz freq will be tissue specific
+freq_list <- c(zeropoint1, 0.3, 1, 3, 10) #0.1 Hz freq will be tissue specific
 
 #First-order
 consensus_params <- parameterlist[which(parameterlist$Capsaicin == capsaicin_num & parameterlist$Complex == 0 & parameterlist$Tissue == tissue_num),]
