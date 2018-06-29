@@ -17,6 +17,7 @@ thismodel2[[1]]$model
 parameterlist <- read.csv("FormattedLowerTrachea/finalParameters.csv") %>% select(-X)
 AUCresults <- NULL
 SSresults <- NULL
+maxresults <- NULL
 #0.096809	0.103418	0.103942	0.096586 cap 0.1 hz
 #0.10312	0.103568	0.099246	0.099837 con 0.1 hz
 tissue_num <- 7
@@ -30,7 +31,7 @@ consensus_params <- parameterlist[which(parameterlist$Capsaicin == capsaicin_num
 init_params <- parameterlist[which(parameterlist$Capsaicin == capsaicin_num & parameterlist$Complex == 1 & parameterlist$Tissue == tissue_num),]
 
 WconDF <- loadNormalizedDF(tissue_num, lower = TRUE, dataDF = "con", normDF = "cap")
-facetgraph(conDF = WconDF, init_params= init_params, consensus_params = consensus_params, freq_list = freq_list, consensus = TRUE)
+#facetgraph(conDF = WconDF, init_params= init_params, consensus_params = consensus_params, freq_list = freq_list, consensus = TRUE)
 
 #run the code below this line to find the AUC for the raw data, and both models
 freq_list <- c(zeropoint1, 0.3,7,1, 3,7, 10,15,30) #0.1 Hz freq will be tissue specific
@@ -51,6 +52,14 @@ names(inhibition_models)<-names(WconDF)
 consensus_models<-as.data.frame(consensus_models)
 names(consensus_models)<-names(WconDF)
 
+# find the max results
+tissue_max <- as.data.frame(rbind(apply(WconDF[1:3001,], 2, max),
+                                   apply(consensus_models, 2, max),
+                                   apply(inhibition_models, 2, max))) %>%
+  select(X0.1HZ, X0.3HZ, X1HZ, X3HZ, X10HZ) %>%
+  mutate(Tissue = tissue_num, var = c("Control", "Simple", "Complex"), Capsaicin = capsaicin_num)
+maxresults <- rbind(maxresults, tissue_max)
+
 # find the AUC results
 tissue_sums <- as.data.frame(rbind(colSums(WconDF[1:3001,]*0.02),
 colSums(consensus_models*0.02),
@@ -64,8 +73,8 @@ SS_sums <- as.data.frame(rbind(colSums((WconDF[1:3001,] - consensus_models)^2),
 colSums((WconDF[1:3001,] - inhibition_models)^2))) %>%
   select(X0.1HZ, X0.3HZ, X1HZ, X3HZ, X10HZ) %>%
   mutate(Tissue = tissue_num, var = c("Simple", "Complex"), Capsaicin = capsaicin_num)
-
 SSresults <- rbind(SSresults, SS_sums)
 
-# write.csv(AUCresults, "FormattedLowerTrachea/AUCresults.csv")
-# write.csv(SSresults, "FormattedLowerTrachea/SSresults.csv")
+write.csv(maxresults, "FormattedLowerTrachea/maxresults.csv")
+write.csv(AUCresults, "FormattedLowerTrachea/AUCresults.csv")
+write.csv(SSresults, "FormattedLowerTrachea/SSresults.csv")
