@@ -83,11 +83,12 @@ for( y in c(1,2,3,4,5)){
 aggregate_stats(con_list = c(1,2,3,4,5), input_fileform = "FormattedUpperTrachea/control/complexResults_",
                 output_filename = "FormattedUpperTrachea/control/con_aggregate_complex.csv")
 
-#statistics for all frequnecy tissue specific numbers. Creates a single final parameter file.
+#statistics for all frequency tissue specific numbers. Creates a single final parameter file.
 con_simple <- 
-  freq_results <- rbind(read.csv("FormattedUpperTrachea/control/con_aggregate_0.1Hz.csv", header = TRUE), 
+  rbind(read.csv("FormattedUpperTrachea/control/con_aggregate_0.1Hz.csv", header = TRUE), 
                         read.csv("FormattedUpperTrachea/control/con_aggregate_Hz.csv")) %>%
   filter(var =="median") %>%
+  plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue")) %>%
   aggregate(by=list(.$Tissue), FUN=mean) %>%
   mutate(Capsaicin = 0, Complex = 0) %>%
   select(-Group.1, -X, -Freq, -var)
@@ -96,6 +97,7 @@ cap_simple <-
   rbind(read.csv("FormattedUpperTrachea/capsaicin/cap_aggregate_0.1Hz.csv", header = TRUE), 
         read.csv("FormattedUpperTrachea/capsaicin/cap_aggregate_Hz.csv")) %>%
   filter(var =="median") %>%
+  plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue")) %>%
   aggregate(by=list(.$Tissue), mean) %>%
   mutate(Capsaicin = 1, Complex = 0) %>%
   select(-Group.1, -X, -Freq, -var)
@@ -103,6 +105,7 @@ cap_simple <-
 cap_complex <- 
   read.csv("FormattedUpperTrachea/capsaicin/cap_aggregate_complex.csv", header = TRUE) %>%
   filter(var =="median") %>%
+  plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue")) %>%
   aggregate(by=list(.$Tissue), mean) %>%
   mutate(Capsaicin = 1, Complex = 1) %>%
   select(-Group.1, -X, -Freq, -var)
@@ -110,6 +113,7 @@ cap_complex <-
 con_complex <- 
   read.csv("FormattedUpperTrachea/control/con_aggregate_complex.csv", header = TRUE) %>%
   filter(var =="median") %>%
+  plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue")) %>%
   aggregate(by=list(.$Tissue), mean) %>%
   mutate(Capsaicin = 0, Complex = 1) %>%
   select(-Group.1, -X, -Freq, -var)
@@ -120,6 +124,7 @@ write.csv(rbind(cap_simple, con_simple, cap_complex, con_complex), "FormattedUpp
 #find frequency specific results - control - simple model
 freq_results <- rbind(read.csv("FormattedUpperTrachea/control/con_aggregate_0.1Hz.csv", header = TRUE), 
                       read.csv("FormattedUpperTrachea/control/con_aggregate_Hz.csv")) %>%
+  plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue")) %>%
   filter(var == "median") %>%
   select(Freq, KAach, KEach, DVach) 
 
@@ -130,6 +135,7 @@ write.csv(meanRes, "FormattedUpperTrachea/control/con_frequency_Hz.csv")
 #find frequency specific results - capsaicin - simple model
 freq_results <- rbind(read.csv("FormattedUpperTrachea/capsaicin/cap_aggregate_0.1Hz.csv", header = TRUE), 
                       read.csv("FormattedUpperTrachea/capsaicin/cap_aggregate_Hz.csv")) %>%
+  plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue")) %>%
   filter(var == "median") %>%
   select(Freq, KAach, KEach, DVach) 
 
@@ -139,6 +145,7 @@ write.csv(meanRes, "FormattedUpperTrachea/capsaicin/cap_frequency_Hz.csv")
 
 #find frequency specific results - capsaicin - complex model
 freq_results <- read.csv("FormattedUpperTrachea/capsaicin/cap_aggregate_complex.csv") %>%
+  plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue")) %>%
   filter(var == "median") %>%
   select(Freq, m2max, chemax, IC50m2, IC50che) 
 
@@ -148,6 +155,7 @@ write.csv(meanRes, "FormattedUpperTrachea/capsaicin/cap_frequency_complex.csv")
 
 #find frequency specific results - control - complex model
 freq_results <- read.csv("FormattedUpperTrachea/control/con_aggregate_complex.csv") %>%
+  plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue")) %>%
   filter(var == "median") %>%
   select(Freq, m2max, chemax, IC50m2, IC50che) 
 

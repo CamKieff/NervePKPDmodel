@@ -13,8 +13,8 @@ source("runModelFunctions.R")
 
 #Define initial parameters.
 #for 2 NT: ACh consensus values here followed by initial unknown parameters
-init_params <- c(KAach = 0.75, #ach model parameters
-                 KEach = 0.75,
+init_params <- c(KAach = 1, #ach model parameters
+                 KEach = 1,
                  DVach = 6,
                  EC50ach = 5.383, #calculated from ACH constriction curves of isolated tracheas
                  
@@ -30,20 +30,23 @@ init_params <- c(KAach = 0.75, #ach model parameters
                  MAXunk = 0)
 
 #Define a single model to run and plot
-thismodel <- defineModel(ACH_mod="simple", unk_mod="none", effect_mod = "oneNT") #what model
+thismodel <- defineModel(ACH_mod="complex", unk_mod="simple", effect_mod = "twoNT_2") #what model
 thismodel[[1]]$model                     #check model diagnostic
-freq0 <- 0.1                            #what frequency
-bestfit <- c("KAach", "KEach", "DVach", "Frequency")
-#bestfit <- c("m2max", "chemax", "IC50m2","IC50che")  #what unknowns are being solved for?
+freq0 <- 0.1                           #what frequency
+tissue_num <- 1
+bestfit <- c("KAunk", "KEunk")
+# bestfit <- c("KAach", "KEach", "DVach", "Frequency")
+# bestfit <- c("m2max", "chemax", "IC50m2","IC50che")  #what unknowns are being solved for?
 
 parameterlist <- read.csv("FormattedLowerTrachea/finalParameters.csv") %>% select(-X)
-init_params <- parameterlist[which(parameterlist$Capsaicin == 1 & parameterlist$Complex ==1 & parameterlist$Tissue == 1),]
+init_params <- parameterlist[which(parameterlist$Capsaicin == 1 & parameterlist$Complex == 1 & parameterlist$Tissue == tissue_num),]
+init_params$EC50unk <- 7.4
 
-freq_list = c(0.3,0.7,1,3,7,10,15,30)
-WconDF <- loadNormalizedDF(1, lower = TRUE, dataDF = "con", normDF = "cap")
-#WconDF$X0.1HZ <- WconDF$X0.1HZ - 0.015 
+#freq_list = c(0.3,0.7,1,3,7,10,15,30)
+WconDF <- loadNormalizedDF(tissue_num, lower = TRUE, dataDF = "con", normDF = "cap")
+WconDF$X0.1HZ <- WconDF$X0.1HZ - 0.015 #for tissue 1 0.1 Hz
 initialresults <- run_mod1(stim_freq = freq0, init_params, chosenmodel = thismodel)
-finalparams <- final_drug_params(stim_freq = freq0, m = 500, WconDF, bestfit = bestfit, init_params, init_model=initialresults, hyper_params = c(2,0.1),model = thismodel, chosen = TRUE)
+finalparams <- final_drug_params(stim_freq = freq0, m = 2000, WconDF, bestfit = bestfit, init_params, init_model=initialresults, hyper_params = c(2,0.1),model = thismodel, chosen = TRUE)
 finalresults <- run_mod1(stim_freq = finalparams[nrow(finalparams),][["Frequency"]], finalparams[nrow(finalparams),], chosenmodel = thismodel)
 
 p30<- (ggplot() #plot
@@ -55,3 +58,4 @@ p30<- (ggplot() #plot
       +xlim(0,60)
 )
 p30
+filter(as.data.frame(finalresults), eff2 == max(finalresults[,"eff2"]))

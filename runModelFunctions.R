@@ -163,7 +163,7 @@ Iteration <- function(con_list = c(1,2,5,7), m = 500, n = 100,
 #or plot consensus results
 facetgraph <- function(conDF, init_params, consensus_params, bestfit, 
                        freq_list = c(0.1, 0.3, 0.7, 1, 3, 10, 15, 30), 
-                       consensus = FALSE, chosenmodel = thismodel){
+                       consensus = FALSE, chosenmodel = thismodel, ncolumns = 3){
   facetDF <-NULL
   for (i in freq_list){
     working_freq <- i
@@ -193,7 +193,7 @@ facetgraph <- function(conDF, init_params, consensus_params, bestfit,
           + geom_line(aes(x=Time, y=Consensus), color="blue",size = 1)
           + geom_line(aes(x=Time, y=Initial), color="red",size = 1)
           #+ facet_wrap(~ Freq, scales="free", ncol=3)
-          + facet_wrap(~ Freq, ncol=3)
+          + facet_wrap(~ Freq, ncol=ncolumns)
           + scale_y_continuous(limits = c(0, 1))
           + theme_bw()
     )
@@ -203,7 +203,7 @@ facetgraph <- function(conDF, init_params, consensus_params, bestfit,
           + geom_line(aes(x=Time, y=Raw), color="black", alpha = 0.5)
           + geom_line(aes(x=Time, y=Initial), color="green",size = 1)
           + geom_line(aes(x=Time, y=Final), color="red",size = 1)
-          + facet_wrap(~ Freq, scales="free", ncol=3)
+          + facet_wrap(~ Freq, scales="free", ncol=ncolumns)
           + theme_bw()
     )
   }
@@ -245,7 +245,7 @@ aggregate_stats <- function(con_list = c(1,2,5,7),
 
 # function to try and fit all frequencies at one.  Finds the SS error for all frequencies
 # and scales them based on the AUC response
-find_allfreq_params <-function(freq_list = c(0.1, 0.3, 1, 3, 10), m = 50, conDF, bestfit,
+find_allfreq_params <-function(freq_list = c(0.1, 0.3, 1, 3, 10), m = 50, WconDF, bestfit,
                                init_params, model = thismodel, hyper_params = c(2,0.1)){
   
   testexp <- hyper_params[1]     #sum of "squares" exponent (must be even; 2 or 4 are probably optimal)

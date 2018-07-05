@@ -43,3 +43,6 @@ vignettes/*.pdf
 *.dll
 FormattedLowerTrachea/SSresults.csv
 FormattedLowerTrachea/AUCresults.csv
+FormattedLowerTrachea/AUCresults.csv
+FormattedLowerTrachea/finalParameters.csv
+FormattedLowerTrachea/SSresults.csv

@@ -6,7 +6,7 @@ source("runModelFunctions.R")
 
 #produces graphable consensus data
 bestfit <- c("KAach", "KEach", "DVach")  #what unknowns are being solved for?
-con_list = c(1,2,5,7) #List of indeces for the files used in this analysis
+con_list = c(1,2,3,4,5) #List of indeces for the files used in this analysis
 
 #Define a model (or more) to run and plot
 thismodel <- defineModel(ACH_mod="complex", unk_mod="none", effect_mod = "oneNT") 
@@ -15,14 +15,20 @@ thismodel2 <- defineModel(ACH_mod="simple", unk_mod="none", effect_mod = "oneNT"
 thismodel2[[1]]$model 
 
 parameterlist <- read.csv("FormattedLowerTrachea/finalParameters.csv") %>% select(-X)
+
+# parameterlist <- read.csv("FormattedLowerTrachea/finalParameters.csv") %>% select(-X)
 AUCresults <- NULL
 SSresults <- NULL
 maxresults <- NULL
-#0.096809	0.103418	0.103942	0.096586 cap 0.1 hz
-#0.10312	0.103568	0.099246	0.099837 con 0.1 hz
+#zeropoint <- c(0.096809,	0.103418,	0.103942,	0.096586) # cap 0.1 hz freq lower
+zeropoint <- c(0.10312,	0.103568,	0.099246,	0.099837) # con 0.1 hz freq lower
+
+#zeropoint <- c(0.103613789,	0.103665968,	0.103912957,	0.103762472,	0.104186936) #cap 0.1 Hz freq - Upper
+#zeropoint <- c(0.095191713,	0.116669075,	0.116671121,	0.101521438,	0.103764105) # con 0.1 Hz freq - Upper
+
 tissue_num <- 7
 capsaicin_num <- 0
-zeropoint1 <- 0.099837
+zeropoint1 <- zeropoint[4]
 freq_list <- c(zeropoint1, 0.3, 1, 3, 10) #0.1 Hz freq will be tissue specific
 
 #First-order
@@ -30,6 +36,7 @@ consensus_params <- parameterlist[which(parameterlist$Capsaicin == capsaicin_num
 #Inhibition
 init_params <- parameterlist[which(parameterlist$Capsaicin == capsaicin_num & parameterlist$Complex == 1 & parameterlist$Tissue == tissue_num),]
 
+#WconDF <- loadNormalizedDF(tissue_num, lower = FALSE, dataDF = "con", normDF = "con")
 WconDF <- loadNormalizedDF(tissue_num, lower = TRUE, dataDF = "con", normDF = "cap")
 #facetgraph(conDF = WconDF, init_params= init_params, consensus_params = consensus_params, freq_list = freq_list, consensus = TRUE)
 
@@ -75,6 +82,6 @@ colSums((WconDF[1:3001,] - inhibition_models)^2))) %>%
   mutate(Tissue = tissue_num, var = c("Simple", "Complex"), Capsaicin = capsaicin_num)
 SSresults <- rbind(SSresults, SS_sums)
 
-write.csv(maxresults, "FormattedLowerTrachea/maxresults.csv")
-write.csv(AUCresults, "FormattedLowerTrachea/AUCresults.csv")
-write.csv(SSresults, "FormattedLowerTrachea/SSresults.csv")
+# write.csv(maxresults, "FormattedLowerTrachea/maxresults.csv")
+# write.csv(AUCresults, "FormattedLowerTrachea/AUCresults.csv")
+# write.csv(SSresults, "FormattedLowerTrachea/SSresults.csv")
