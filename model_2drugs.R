@@ -40,7 +40,7 @@ bestfit <- c("KAunk", "KEunk")
 
 parameterlist <- read.csv("FormattedLowerTrachea/finalParameters.csv") %>% select(-X)
 init_params <- parameterlist[which(parameterlist$Capsaicin == 1 & parameterlist$Complex == 1 & parameterlist$Tissue == tissue_num),]
-init_params$EC50unk <- 7.4
+init_params$EC50unk <- 7.9
 
 #freq_list = c(0.3,0.7,1,3,7,10,15,30)
 WconDF <- loadNormalizedDF(tissue_num, lower = TRUE, dataDF = "con", normDF = "cap")

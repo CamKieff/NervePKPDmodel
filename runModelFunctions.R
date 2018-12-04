@@ -179,7 +179,7 @@ facetgraph <- function(conDF, init_params, consensus_params, bestfit,
     if(consensus == TRUE){
       plotDF <- data.frame(rep(working_freq, length(initialresults)), initialresults[,"time"], conDF[1:length(initialresults[,"time"]),paste0("X", working_freq, "HZ")], initialresults[,"eff2"],consensusresults[,"eff2"])
     } else{
-      finalparams <- final_drug_params(stim_freq = working_freq, m = 500, conDF, bestfit = bestfit, init_params, initialresults)
+      finalparams <- final_drug_params(stim_freq = working_freq, m = 500, conDF, bestfit = bestfit, init_params, initialresults, hyper_params = c(2, 0.1))
       finalresults <- run_mod1(stim_freq = working_freq, finalparams[nrow(finalparams),], chosenmodel = chosenmodel)
       plotDF <- data.frame(rep(working_freq, length(finalresults)), initialresults[,"time"], conDF[1:length(initialresults[,"time"]),paste0("X", working_freq, "HZ")], initialresults[,"eff2"], finalresults[,"eff2"])
     }
@@ -201,9 +201,9 @@ facetgraph <- function(conDF, init_params, consensus_params, bestfit,
     colnames(facetDF)<-c("Freq", "Time", "Raw", "Initial", "Final")
     p <- (ggplot(facetDF)
           + geom_line(aes(x=Time, y=Raw), color="black", alpha = 0.5)
-          + geom_line(aes(x=Time, y=Initial), color="green",size = 1)
+          + geom_line(aes(x=Time, y=Initial), color="blue",size = 1)
           + geom_line(aes(x=Time, y=Final), color="red",size = 1)
-          + facet_wrap(~ Freq, scales="free", ncol=ncolumns)
+          + facet_wrap(~ Freq, ncol=ncolumns)
           + theme_bw()
     )
   }
