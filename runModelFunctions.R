@@ -13,11 +13,10 @@ require(ggplot2)
 require(reshape2)
 require(plyr)
 require(dplyr)
-source("normalizedDF.R")
 source("defineModel.R")
 
 #a function that takes parameters and runs the model
-run_mod1 <- function(stim_freq, mod_params, chosenmodel = thismodel){
+run_mod1 <- function(stim_freq, mod_params, chosenmodel = thismodel, sampling_rate = 0.1){
   parameters <- c(KA1 = mod_params[["KAunk"]],
                   KE1 = mod_params[["KEunk"]],
                   KA2 = mod_params[["KAach"]],
@@ -38,7 +37,7 @@ run_mod1 <- function(stim_freq, mod_params, chosenmodel = thismodel){
     testev <- eventTable(amount.units="mol", time.unit="seconds")
     testev$add.dosing(dose = 10^-mod_params[["DVunk"]], nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 1, start.time = 0)
     testev$add.dosing(dose = 10^-mod_params[["DVach"]], nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 3, start.time = 0)
-    testev$add.sampling(seq(from = 0, to = time_var, by = 0.02))
+    testev$add.sampling(seq(from = 0, to = time_var, by = sampling_rate))
   } else if(chosenmodel[[3]] == 1){
 
     if(stim_freq < 0.1){
@@ -51,7 +50,7 @@ run_mod1 <- function(stim_freq, mod_params, chosenmodel = thismodel){
     }
     testev <- eventTable(amount.units="mol", time.unit="seconds")
     testev$add.dosing(dose = 10^-mod_params[["DVach"]], nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 1, start.time = 0)
-    testev$add.sampling(seq(from = 0, to = time_var, by = 0.02))
+    testev$add.sampling(seq(from = 0, to = time_var, by = sampling_rate))
   } else(
     print("Model does not currently support more than two neurotransmitters (NT). Please set NT equal to either 1 or 2.")
   )
@@ -128,116 +127,220 @@ final_drug_params <-function(stim_freq, m = 50, conDF, bestfit,
   }
 }
 
-#runs the model 100x for all tissues and frequencies
-#can also run a single model if con_list is only set to a single index
-Iteration <- function(con_list = c(1,2,5,7), m = 500, n = 100,
-                      dataDF = "con", normDF = "cap", lower = TRUE,
-                      ITmodel = thismodel, bestfit, init_params, hyperparams = c(2, 0.5),
-                      freq_list = c(0.1, 0.3,0.7,1, 3, 7, 10, 15, 30),
-                      filename = "FormattedLowerTrachea/capsaicin/Results_"){
-
-  for(r in con_list){                                                      #iterates through each raw file
-    WconDF <- loadNormalizedDF(r, lower = lower, dataDF = dataDF, normDF = normDF) #load file
-    print(paste0("File ", r, " loaded."))
-    for (q in freq_list){                                                  #iterates through each frequency
-      print(paste0("Start ", q, " Hz run"))
-      initialresults <- run_mod1(q, init_params, chosenmodel = ITmodel)   #find starting point model results from initial parameters
-      finalparams <- final_drug_params(q, m = m, WconDF, bestfit = bestfit, init_params, 
-                                       initialresults, model = ITmodel, hyper_params = hyperparams)
-
-      finalparamsDF <- c(q, finalparams[nrow(finalparams),])              #take initial parameters and start vector for final values
-
-      for(k in seq(1:n)){
-        finalparams <- final_drug_params(q, m = m, WconDF, bestfit = bestfit, init_params, 
-                                         initialresults, model = ITmodel, hyper_params = hyperparams)
-        finalparamsDF <- rbind(finalparamsDF, c(q, finalparams[nrow(finalparams),]))
-      }
-      
-     #append results to a single cvs file per index after each frequency
-      write.table(as.data.frame(finalparamsDF), paste0(filename, r, ".csv"), append = TRUE, sep = ",", dec = ".", qmethod = "double", col.names = FALSE)
-    }
+#load and normalized Control data.frames. if control is true, max is set from capsaicin; if false, both max and min are capsaicin
+#data to be normalized (dataDF) = control ("con") or capsaicin ("cap")
+#normalizing data frame (normDF) = control ("con") or capsaicin ("cap")
+#lower trachea = TRUE; upper trachea = FALSE
+loadNormalizedDF <- function(index = 1, lower = TRUE, dataDF = "con", normDF = "cap"){
+  
+  #creates a list of file names for the chosen directory
+  if (lower){
+    cap_directory_name <- 'FormattedLowerTrachea/capsaicin/'
+    con_directory_name <- 'FormattedLowerTrachea/control/'
+  } else{
+    cap_directory_name <- 'FormattedUpperTrachea/capsaicin/'
+    con_directory_name <- 'FormattedUpperTrachea/control/'
+  }
+  cap_list <-dir(cap_directory_name, "*.csv")
+  con_list <-dir(con_directory_name, "*.csv")
+  
+  #load DF
+  capDF <- read.csv(paste0(cap_directory_name, cap_list[index])) #Working capsaicin data.frame
+  conDF <- read.csv(paste0(con_directory_name, con_list[index]))
+  
+  if(normDF == "cap"){
+    FRmax <- (max(capDF[,2:ncol(capDF)])-min(capDF[,2:ncol(capDF)])) #denominator for capsaicin and control normalization using capsaicin data
+  }else if(normDF == "con"){
+    FRmax <- (max(conDF[,2:ncol(conDF)])-min(conDF[,2:ncol(conDF)])) #denominator for capsaicin and control normalization using capsaicin data
+  }else{
+    print("The normalization DF (normDF) must be either control (\"con\") or (\"cap\")")
+  }
+  
+  if(dataDF == "con"){
+    #format control DF
+    FRmin <- min(conDF[,2:ncol(conDF)]) #baseline mg tension to subtract to get relative contraction values
+    conDF[,2:ncol(conDF)] <- (conDF[,2:ncol(conDF)] - FRmin)/FRmax
+    return(conDF)
+  } else if (dataDF == "cap"){
+    #format capsaicin DF
+    FRmin <- min(capDF[,2:ncol(capDF)]) #baseline mg tension to subtract to get relative contraction values
+    capDF[,2:ncol(capDF)] <- (capDF[,2:ncol(capDF)] - FRmin)/FRmax
+    return(capDF)
+  } else{
+    print("dataDF must be either control data (\"con\") or capsaicin data (\"cap\")")
   }
 }
+
+# function to try and fit all frequencies at one.  Finds the SS error for all frequencies
+# and scales them based on the AUC response
+find_allfreq_params <-function(HZdf, m = 50, bestfit, init_params, freq_list = c(0.1, 0.3, 1, 3, 10),
+                               model = thismodel, hyper_params = c(2,0.1)){
+  
+  testexp <- hyper_params[1]     #sum of "squares" exponent (must be even; 2 or 4 are probably optimal)
+  lambda <- hyper_params[2]      #learning rate
+  working_df <- HZdf %>% select(Time, paste0('X', freq_list, "HZ"))
+  raw_AUC <- colSums(working_df) #find control data column sums for scaling
+  
+  # find SS errors for initial parameters to find a number to beat
+  initialresults <- working_df$Time
+  for (q in freq_list){                                                  
+    init_results1 <- run_mod1(q, init_params, chosenmodel = thismodel)   
+    initialresults <- cbind(initialresults, init_results1[,"eff2"])
+  }
+  names(initialresults) <- names(working_df)
+  
+  SSdif_df <- (initialresults - working_df)^2 
+  numberToBeat <- mean((colSums(SSdif_df)/raw_AUC)[-1]) #initial average of sum of squares scaled to AUC
+  
+  newparams <- init_params           #stores current best-fit parameters
+  
+  for (j in 1:m){                    #number of iterations to find best fit
+    for(i in bestfit){
+      testparams <- newparams
+      testparams[[i]] <- abs(rnorm(n = 1, mean = newparams[[i]], sd = (sqrt(init_params[[i]]^2)*lambda)))
+      
+      if(testparams[["m2max"]] > 1) { #hard coded limited for complex model params
+        testparams[["m2max"]] <- 1    #without the max limits, the model fails to converge
+      } 
+      if(testparams[["chemax"]] > 1) {
+        testparams[["chemax"]] <- 1
+      }
+      if(testparams[["IC50che"]] > 10) { #these limits just keep the IC50s in physiologically relevant ranges
+        testparams[["IC50che"]] <- 10    #there is a local minima they can get stuck at around 20
+      } 
+      if(testparams[["IC50m2"]] > 10) {
+        testparams[["IC50m2"]] <- 10
+      }
+      
+      iteration_results <- working_df$Time
+      for (q in freq_list){                                                  
+        init_results1 <- run_mod1(q, testparams, chosenmodel = thismodel)   
+        iteration_results <- cbind(iteration_results, init_results1[,"eff2"])
+      }
+      names(iteration_results) <- names(working_df)
+      
+      SSdif_df <-(iteration_results - working_df)^2
+      newNumber <- mean((colSums(SSdif_df)/raw_AUC)[-1])
+      
+      if(newNumber < numberToBeat) { #test if the SS for the new model is better than the old model
+        newparams[i] <- testparams[i]
+      } 
+    }
+  }
+  return(newparams) #return the best fit parameters. 
+}
+
+
+#runs the model 100x for all tissues and frequencies
+#can also run a single model if con_list is only set to a single index
+# Iteration <- function(con_list = c(1,2,5,7), m = 500, n = 100,
+#                       dataDF = "con", normDF = "cap", lower = TRUE,
+#                       ITmodel = thismodel, bestfit, init_params, hyperparams = c(2, 0.5),
+#                       freq_list = c(0.1, 0.3,0.7,1, 3, 7, 10, 15, 30),
+#                       filename = "FormattedLowerTrachea/capsaicin/Results_"){
+# 
+#   for(r in con_list){                                                      #iterates through each raw file
+#     WconDF <- loadNormalizedDF(r, lower = lower, dataDF = dataDF, normDF = normDF) #load file
+#     print(paste0("File ", r, " loaded."))
+#     for (q in freq_list){                                                  #iterates through each frequency
+#       print(paste0("Start ", q, " Hz run"))
+#       initialresults <- run_mod1(q, init_params, chosenmodel = ITmodel)   #find starting point model results from initial parameters
+#       finalparams <- final_drug_params(q, m = m, WconDF, bestfit = bestfit, init_params, 
+#                                        initialresults, model = ITmodel, hyper_params = hyperparams)
+# 
+#       finalparamsDF <- c(q, finalparams[nrow(finalparams),])              #take initial parameters and start vector for final values
+# 
+#       for(k in seq(1:n)){
+#         finalparams <- final_drug_params(q, m = m, WconDF, bestfit = bestfit, init_params, 
+#                                          initialresults, model = ITmodel, hyper_params = hyperparams)
+#         finalparamsDF <- rbind(finalparamsDF, c(q, finalparams[nrow(finalparams),]))
+#       }
+#       
+#      #append results to a single cvs file per index after each frequency
+#       write.table(as.data.frame(finalparamsDF), paste0(filename, r, ".csv"), append = TRUE, sep = ",", dec = ".", qmethod = "double", col.names = FALSE)
+#     }
+#   }
+# }
 
 #run final_drug_params once for each frequency and create a nice facetwrap graph of the best-fit results
 #or plot consensus results
-facetgraph <- function(conDF, init_params, consensus_params, bestfit, 
-                       freq_list = c(0.1, 0.3, 0.7, 1, 3, 10, 15, 30), 
-                       consensus = FALSE, chosenmodel = thismodel){
-  facetDF <-NULL
-  for (i in freq_list){
-    working_freq <- i
-    if(working_freq < 0.2){
-      initialresults <- run_mod1(stim_freq = working_freq, init_params, chosenmodel = thismodel)
-      consensusresults <- run_mod1(stim_freq = working_freq, consensus_params, chosenmodel = thismodel2)
-      working_freq <- 0.1
-    } else{
-      initialresults <- run_mod1(stim_freq = working_freq, init_params, chosenmodel = thismodel)
-      consensusresults <- run_mod1(stim_freq = working_freq, consensus_params, chosenmodel = thismodel2)
-      
-    }
-    if(consensus == TRUE){
-      plotDF <- data.frame(rep(working_freq, length(initialresults)), initialresults[,"time"], conDF[1:length(initialresults[,"time"]),paste0("X", working_freq, "HZ")], initialresults[,"eff2"],consensusresults[,"eff2"])
-    } else{
-      finalparams <- final_drug_params(stim_freq = working_freq, m = 500, conDF, bestfit = bestfit, init_params, initialresults)
-      finalresults <- run_mod1(stim_freq = working_freq, finalparams[nrow(finalparams),], chosenmodel = chosenmodel)
-      plotDF <- data.frame(rep(working_freq, length(finalresults)), initialresults[,"time"], conDF[1:length(initialresults[,"time"]),paste0("X", working_freq, "HZ")], initialresults[,"eff2"], finalresults[,"eff2"])
-    }
-    
-    facetDF <- rbind(plotDF, facetDF)
-  }
-  if(consensus == TRUE){
-    colnames(facetDF)<-c("Freq", "Time", "Raw", "Initial", "Consensus")
-    p <- (ggplot(facetDF)
-          + geom_line(aes(x=Time, y=Raw), color="black", alpha = 0.5)
-          + geom_line(aes(x=Time, y=Consensus), color="blue",size = 1)
-          + geom_line(aes(x=Time, y=Initial), color="red",size = 1)
-          #+ facet_wrap(~ Freq, scales="free", ncol=3)
-          + facet_wrap(~ Freq, ncol=3)
-          + scale_y_continuous(limits = c(0, 1))
-          + theme_bw()
-    )
-  } else{
-    colnames(facetDF)<-c("Freq", "Time", "Raw", "Initial", "Final")
-    p <- (ggplot(facetDF)
-          + geom_line(aes(x=Time, y=Raw), color="black", alpha = 0.5)
-          + geom_line(aes(x=Time, y=Initial), color="green",size = 1)
-          + geom_line(aes(x=Time, y=Final), color="red",size = 1)
-          + facet_wrap(~ Freq, scales="free", ncol=3)
-          + theme_bw()
-    )
-  }
-  
-  p
-}
+# facetgraph <- function(conDF, init_params, consensus_params, bestfit, 
+#                        freq_list = c(0.1, 0.3, 0.7, 1, 3, 10, 15, 30), 
+#                        consensus = FALSE, chosenmodel = thismodel){
+#   facetDF <-NULL
+#   for (i in freq_list){
+#     working_freq <- i
+#     if(working_freq < 0.2){
+#       initialresults <- run_mod1(stim_freq = working_freq, init_params, chosenmodel = thismodel)
+#       consensusresults <- run_mod1(stim_freq = working_freq, consensus_params, chosenmodel = thismodel2)
+#       working_freq <- 0.1
+#     } else{
+#       initialresults <- run_mod1(stim_freq = working_freq, init_params, chosenmodel = thismodel)
+#       consensusresults <- run_mod1(stim_freq = working_freq, consensus_params, chosenmodel = thismodel2)
+#       
+#     }
+#     if(consensus == TRUE){
+#       plotDF <- data.frame(rep(working_freq, length(initialresults)), initialresults[,"time"], conDF[1:length(initialresults[,"time"]),paste0("X", working_freq, "HZ")], initialresults[,"eff2"],consensusresults[,"eff2"])
+#     } else{
+#       finalparams <- final_drug_params(stim_freq = working_freq, m = 500, conDF, bestfit = bestfit, init_params, initialresults)
+#       finalresults <- run_mod1(stim_freq = working_freq, finalparams[nrow(finalparams),], chosenmodel = chosenmodel)
+#       plotDF <- data.frame(rep(working_freq, length(finalresults)), initialresults[,"time"], conDF[1:length(initialresults[,"time"]),paste0("X", working_freq, "HZ")], initialresults[,"eff2"], finalresults[,"eff2"])
+#     }
+#     
+#     facetDF <- rbind(plotDF, facetDF)
+#   }
+#   if(consensus == TRUE){
+#     colnames(facetDF)<-c("Freq", "Time", "Raw", "Initial", "Consensus")
+#     p <- (ggplot(facetDF)
+#           + geom_line(aes(x=Time, y=Raw), color="black", alpha = 0.5)
+#           + geom_line(aes(x=Time, y=Consensus), color="blue",size = 1)
+#           + geom_line(aes(x=Time, y=Initial), color="red",size = 1)
+#           #+ facet_wrap(~ Freq, scales="free", ncol=3)
+#           + facet_wrap(~ Freq, ncol=3)
+#           + scale_y_continuous(limits = c(0, 1))
+#           + theme_bw()
+#     )
+#   } else{
+#     colnames(facetDF)<-c("Freq", "Time", "Raw", "Initial", "Final")
+#     p <- (ggplot(facetDF)
+#           + geom_line(aes(x=Time, y=Raw), color="black", alpha = 0.5)
+#           + geom_line(aes(x=Time, y=Initial), color="green",size = 1)
+#           + geom_line(aes(x=Time, y=Final), color="red",size = 1)
+#           + facet_wrap(~ Freq, scales="free", ncol=3)
+#           + theme_bw()
+#     )
+#   }
+#   
+#   p
+# }
 
 
 #run mean, median, sd on stat results by frequency and tissue. Compiles output into a single csv file
-aggregate_stats <- function(con_list = c(1,2,5,7),
-                        input_fileform = "FormattedLowerTrachea/capsaicin/Results0.1Hz_",
-                        output_filename = "FormattedLowerTrachea/capsaicin/cap_aggregate_0.1Hz.csv"){
-  df<- data.frame(NULL)
-  init_params <- c(KAach = 1, KEach = 1,DVach = 6,EC50ach = 5.383,m2max = 0.5,chemax = 0.5,IC50m2 = 7,IC50che = 7,KAunk = 1,KEunk = 1,DVunk = 7,EC50unk = 5,MAXunk = 0)
-  
-  for(i in con_list){
-    con1 <- read.csv(paste0(input_fileform, i, ".csv"), header= FALSE)
-    names(con1)<-c("blank","freq", names(init_params), "test_freq", "SS")
-    
-    df<-
-      con1 %>%
-      mutate(tissue = i) %>%
-      rbind(df)
-  }
-  df$blank <- NULL
-  aggdata <- mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), mean, na.action=TRUE), var = "mean")
-  aggdata <- rbind(aggdata, mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), median, na.action=TRUE), var = "median"))
-  aggdata <- rbind(aggdata, mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), sd), var = "sd"))
-  
-  aggdata <- 
-    aggdata %>%
-    arrange(var, Group.1, Group.2) %>%
-    select(-freq, -tissue) %>%
-    plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue"))
-  
-  write.csv(aggdata, output_filename) #export
-}
+# aggregate_stats <- function(con_list = c(1,2,5,7),
+#                         input_fileform = "FormattedLowerTrachea/capsaicin/Results0.1Hz_",
+#                         output_filename = "FormattedLowerTrachea/capsaicin/cap_aggregate_0.1Hz.csv"){
+#   df<- data.frame(NULL)
+#   init_params <- c(KAach = 1, KEach = 1,DVach = 6,EC50ach = 5.383,m2max = 0.5,chemax = 0.5,IC50m2 = 7,IC50che = 7,KAunk = 1,KEunk = 1,DVunk = 7,EC50unk = 5,MAXunk = 0)
+#   
+#   for(i in con_list){
+#     con1 <- read.csv(paste0(input_fileform, i, ".csv"), header= FALSE)
+#     names(con1)<-c("blank","freq", names(init_params), "test_freq", "SS")
+#     
+#     df<-
+#       con1 %>%
+#       mutate(tissue = i) %>%
+#       rbind(df)
+#   }
+#   df$blank <- NULL
+#   aggdata <- mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), mean, na.action=TRUE), var = "mean")
+#   aggdata <- rbind(aggdata, mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), median, na.action=TRUE), var = "median"))
+#   aggdata <- rbind(aggdata, mutate(aggregate.data.frame(df, by=list(df$freq, df$tissue), sd), var = "sd"))
+#   
+#   aggdata <- 
+#     aggdata %>%
+#     arrange(var, Group.1, Group.2) %>%
+#     select(-freq, -tissue) %>%
+#     plyr::rename(c("Group.1" = "Freq", "Group.2" = "Tissue"))
+#   
+#   write.csv(aggdata, output_filename) #export
+# }

@@ -1,0 +1,17 @@
+CODE,DATE,BATH,TISSUE,TREATMENT,KCL,TREATMENT_FILE,CONTROL_FILE
+2017-0118-B1,2017-0118,B1,U,capsaicin,377.739,EFSfiles/2017-0118-B1-U-capsaicin.csv,EFSfiles/2017-0118-B1-U-control.csv
+2017-0118-B2,2017-0118,B2,L,capsaicin,990.606,EFSfiles/2017-0118-B2-L-capsaicin.csv,EFSfiles/2017-0118-B2-L-control.csv
+2017-0118-B3,2017-0118,B3,U,capsaicin,556.172,EFSfiles/2017-0118-B3-U-capsaicin.csv,EFSfiles/2017-0118-B3-U-control.csv
+2017-0119-B1,2017-0119,B1,U,capsaicin,313.116,EFSfiles/2017-0119-B1-U-capsaicin.csv,EFSfiles/2017-0119-B1-U-control.csv
+2017-0119-B2,2017-0119,B2,L,capsaicin,940.559,EFSfiles/2017-0119-B2-L-capsaicin.csv,EFSfiles/2017-0119-B2-L-control.csv
+2017-0119-B3,2017-0119,B3,U,capsaicin,402.886,EFSfiles/2017-0119-B3-U-capsaicin.csv,EFSfiles/2017-0119-B3-U-control.csv
+2017-0123-B1,2017-0123,B1,L,capsaicin,305.983,EFSfiles/2017-0123-B1-L-capsaicin.csv,EFSfiles/2017-0123-B1-L-control.csv
+2017-0123-B3,2017-0123,B3,L,capsaicin,1119.849,EFSfiles/2017-0123-B3-L-capsaicin.csv,EFSfiles/2017-0123-B3-L-control.csv
+2017-0124-B1,2017-0124,B1,L,capsaicin,465.48,EFSfiles/2017-0124-B1-L-capsaicin.csv,EFSfiles/2017-0124-B1-L-control.csv
+2017-0124-B3,2017-0124,B3,L,capsaicin,756.064,EFSfiles/2017-0124-B3-L-capsaicin.csv,EFSfiles/2017-0124-B3-L-control.csv
+2017-0124-B4,2017-0124,B4,U,capsaicin,437.655,EFSfiles/2017-0124-B4-U-capsaicin.csv,EFSfiles/2017-0124-B4-U-control.csv
+2017-0327-B1,2017-0327,B1,L,capsaicin,315.214,EFSfiles/2017-0327-B1-L-capsaicin.csv,EFSfiles/2017-0327-B1-L-control.csv
+2017-0707-B3,2017-0707,B3,L,PF04418948,735.044,EFSfiles/2017-0707-B3-L-PF04418948.csv,EFSfiles/2017-0707-B3-L-control.csv
+2018-0409-B1,2018-0409,B1,L,PF04418948,523.198,EFSfiles/2018-0409-B1-L-PF04418948.csv,EFSfiles/2018-0409-B1-L-control.csv
+2018-0409-B3,2018-0409,B3,L,PF04418948,631.335,EFSfiles/2018-0409-B3-L-PF04418948.csv,EFSfiles/2018-0409-B3-L-control.csv
+2018-0411-B2,2018-0411,B2,L,physostigmine,903.461,EFSfiles/2018-0411-B2-L-physostigmine.csv,EFSfiles/2018-0411-B2-L-control.csv

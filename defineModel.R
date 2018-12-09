@@ -5,7 +5,6 @@
 #summation method of model if more than two neurotransmitters are used
 
 #ODEinits for one drug vs two drugs
-require(RxODE)
 
 defineModel <- function(ACH_mod="simple", unk_mod="none", effect_mod = "oneNT"){
   ach_models <- list(
