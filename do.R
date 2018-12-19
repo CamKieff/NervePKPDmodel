@@ -28,26 +28,30 @@ init_params <- c(KAach = 1, #ach model parameters
 thismodel <- defineModel(ACH_mod="simple", unk_mod="none", effect_mod = "oneNT") #what model
 thismodel[[1]]$model                     #check model diagnostic
 
-EFSfileDB <- read.csv("EFSfileDB.csv", header = TRUE)
+EFSfileDB <- read.csv("EFSfileDB.csv", header = TRUE) %>% filter(TISSUE == "L")
 freq_list <- c(0.1, 0.3, 1, 3, 10)
 #EFSfiles$DATE <- as.Date(EFSfiles$DATE, format = "%Y-%m%d")
 
-control_EFSdata <- vector("list", length=nrow(EFSfileDB))
-for (i in 1:length(control_EFSdata)){
+Lcontrol_EFSdata <- vector("list", length=nrow(EFSfileDB))
+for (i in 1:length(Lcontrol_EFSdata)){
   df <- read.csv(as.character(EFSfileDB$CONTROL_FILE[i]), header = TRUE)
   df <- df %>% filter(Time <= 60 & (Time*10) %% 1 == 0) %>%
     select(Time, paste0('X', freq_list, "HZ"))
   df_min <- min(df[, 2:ncol(df)])
   df_max <- max(df[, 2:ncol(df)])
-  df <- df %>% mutate_at(vars(-Time), function(x){(x-df_min)/(EFSfileDB$KCL[i])}) %>%
-      mutate(ID = EFSfileDB$CODE[i])
-  control_EFSdata[[i]] <- df
+  X0.1HZ_max <- max(df$X0.1HZ)
+  #df <- df %>% mutate_at(vars(-Time), function(x){(x-df_min)/(EFSfileDB$KCL[i])}) %>%
+  df <- df %>% mutate_at(vars(-Time), function(x){(x-df_min)/(X0.1HZ_max-df_min)}) %>%
+    mutate(ID = EFSfileDB$CODE[i])
+  Lcontrol_EFSdata[[i]] <- df
 }
-control_EFSdata <- bind_rows(control_EFSdata)
+Lcontrol_EFSdata <- bind_rows(Lcontrol_EFSdata)
 
-g1 <- ggplot(control_EFSdata[, c("Time", "X1HZ", "ID")], aes(x=Time, y = X1HZ, color = ID))
+g1 <- ggplot(Lcontrol_EFSdata[, c("Time", "X1HZ", "ID")], aes(x=Time, y = X1HZ, color = ID))
 g1 <- g1 + geom_line()
 g1
+
+g2 <- facetgraph(conDF = test, init_params = init_params, consensus_params = results, bestfit = c("KAach", "KEach", "DVach"), consensus = TRUE, freq_list = freq_list)
 
 # should re-do file using the find_allfreq_params functions
 # freq_list = c(0.1, 0.3, 1, 3, 10), m = 50, WconDF, bestfit,
