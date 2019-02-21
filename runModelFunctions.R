@@ -46,7 +46,6 @@ run_mod1 <- function(stim_freq, mod_params, chosenmodel = thismodel, sampling_ra
     } else{
       pulse_rate <- 1/stim_freq
       num_doses <- time_var/pulse_rate
-
     }
     testev <- eventTable(amount.units="mol", time.unit="seconds")
     testev$add.dosing(dose = 10^-mod_params[["DVach"]], nbr.doses = num_doses, dosing.interval = pulse_rate, dosing.to = 1, start.time = 0)
@@ -70,11 +69,11 @@ final_drug_params <-function(stim_freq, m = 50, conDF, bestfit,
   init_params <- c(init_params, Frequency = stim_freq) #allows for testing of frequency fits
 
   #creates workingdata for the model comparison
-  if (stim_freq < 0.2){
-    workingdata <- data.frame(init_model[,"time"], init_model[,"eff2"], conDF[1:length(init_model[,"time"]),paste0("X", 0.1, "HZ")])
-  } else{
-    workingdata <- data.frame(init_model[,"time"], init_model[,"eff2"], conDF[1:length(init_model[,"time"]),paste0("X", stim_freq, "HZ")])
-  }
+  if (stim_freq < 0.2){workingdata <- data.frame(init_model[,"time"], init_model[,"eff2"], conDF[1:length(init_model[,"time"]),paste0("X", 0.1, "HZ")])
+  } else if(stim_freq > 0.2 & stim_freq < 0.4) {workingdata <- data.frame(init_model[,"time"], init_model[,"eff2"], conDF[1:length(init_model[,"time"]),paste0("X", 0.3, "HZ")])
+  } else if(stim_freq > 0.9 & stim_freq < 1.1) {workingdata <- data.frame(init_model[,"time"], init_model[,"eff2"], conDF[1:length(init_model[,"time"]),paste0("X", 1, "HZ")])
+  } else{workingdata <- data.frame(init_model[,"time"], init_model[,"eff2"], conDF[1:length(init_model[,"time"]),paste0("X", stim_freq, "HZ")])}
+  
   names(workingdata)<- c("Time", "Model", "Data")
   workingdata$SS <- (workingdata$Model - workingdata$Data)^testexp
 
@@ -87,19 +86,19 @@ final_drug_params <-function(stim_freq, m = 50, conDF, bestfit,
       testparams <- newparams
       testparams[[i]] <- abs(rnorm(n = 1, mean = newparams[[i]], sd = (sqrt(init_params[[i]]^2)*lambda)))
       tested_params <- rbind(tested_params, testparams)
-
-      if(testparams[["m2max"]] > 1) { #hard coded limited for complex model params
-        testparams[["m2max"]] <- 1    #without the max limits, the model fails to converge
-      } 
-      if(testparams[["chemax"]] > 1) {
-        testparams[["chemax"]] <- 1
-      }
-      if(testparams[["IC50che"]] > 10) { #these limits just keep the IC50s in physiologically relevant ranges
-        testparams[["IC50che"]] <- 10    #there is a local minima they can get stuck at around 20
-      } 
-      if(testparams[["IC50m2"]] > 10) {
-        testparams[["IC50m2"]] <- 10
-      }
+      
+      #hard coded limited for complex model params without the max limits, the model fails to converge
+      if(testparams[["m2max"]] > 1) {testparams[["m2max"]] <- 1}
+      if(testparams[["chemax"]] > 1) {testparams[["chemax"]] <- 1}
+      
+      #these limits just keep the IC50s in physiologically relevant ranges; there is a local minima they can get stuck at around 20
+      if(testparams[["IC50che"]] > 10) {testparams[["IC50che"]] <- 10} 
+      if(testparams[["IC50m2"]] > 10) {testparams[["IC50m2"]] <- 10}
+      
+      #restrict frequencies allowable through frequency search at lowfreq. Limit to plus/minus 15%.
+      if(testparams[["Frequency"]] > (stim_freq+stim_freq*0.15)){testparams[["Frequency"]] <- (stim_freq+stim_freq*0.1)} # upper bound
+      if(testparams[["Frequency"]] < (stim_freq-stim_freq*0.15)){testparams[["Frequency"]] <- (stim_freq-stim_freq*0.1)} # lower bound
+      
       if(!chosen){print(testparams)} #for debugging
       
       iteration <- run_mod1(stim_freq = testparams[["Frequency"]], testparams, chosenmodel = model)       #calls run_mod1 to run the model
@@ -178,7 +177,7 @@ find_allfreq_params <-function(HZdf, m = 50, bestfit, init_params, freq_list = c
   
   testexp <- hyper_params[1]     #sum of "squares" exponent (must be even; 2 or 4 are probably optimal)
   lambda <- hyper_params[2]      #learning rate
-  working_df <- HZdf %>% select(Time, paste0('X', freq_list, "HZ"))
+  working_df <- HZdf %>% ungroup() %>% select(-ID)
   raw_AUC <- colSums(working_df) #find control data column sums for scaling
   
   # find SS errors for initial parameters to find a number to beat
@@ -199,18 +198,13 @@ find_allfreq_params <-function(HZdf, m = 50, bestfit, init_params, freq_list = c
       testparams <- newparams
       testparams[[i]] <- abs(rnorm(n = 1, mean = newparams[[i]], sd = (sqrt(init_params[[i]]^2)*lambda)))
       
-      if(testparams[["m2max"]] > 1) { #hard coded limited for complex model params
-        testparams[["m2max"]] <- 1    #without the max limits, the model fails to converge
-      } 
-      if(testparams[["chemax"]] > 1) {
-        testparams[["chemax"]] <- 1
-      }
-      if(testparams[["IC50che"]] > 10) { #these limits just keep the IC50s in physiologically relevant ranges
-        testparams[["IC50che"]] <- 10    #there is a local minima they can get stuck at around 20
-      } 
-      if(testparams[["IC50m2"]] > 10) {
-        testparams[["IC50m2"]] <- 10
-      }
+      #hard coded limited for complex model params without the max limits, the model fails to converge
+      if(testparams[["m2max"]] > 1) {testparams[["m2max"]] <- 1}
+      if(testparams[["chemax"]] > 1) {testparams[["chemax"]] <- 1}
+      
+      #these limits just keep the IC50s in physiologically relevant ranges; there is a local minima they can get stuck at around 20
+      if(testparams[["IC50che"]] > 10) {testparams[["IC50che"]] <- 10} 
+      if(testparams[["IC50m2"]] > 10) {testparams[["IC50m2"]] <- 10}
       
       iteration_results <- working_df$Time
       for (q in freq_list){                                                  
@@ -274,18 +268,23 @@ facetgraph <- function(conDF, init_params, consensus_params, bestfit,
       initialresults <- run_mod1(stim_freq = working_freq, init_params, chosenmodel = thismodel)
       consensusresults <- run_mod1(stim_freq = working_freq, consensus_params, chosenmodel = thismodel)
       working_freq <- 0.1
+    } else if(working_freq > 0.2 & working_freq < 0.4){
+      initialresults <- run_mod1(stim_freq = working_freq, init_params, chosenmodel = thismodel)
+      consensusresults <- run_mod1(stim_freq = working_freq, consensus_params, chosenmodel = thismodel)
+      working_freq <- 0.3
     } else{
       initialresults <- run_mod1(stim_freq = working_freq, init_params, chosenmodel = thismodel)
       consensusresults <- run_mod1(stim_freq = working_freq, consensus_params, chosenmodel = thismodel)
-
     }
     if(consensus == TRUE){
-      plotDF <- data.frame(rep(working_freq, length(initialresults)), initialresults[,"time"], conDF[1:length(initialresults[,"time"]),paste0("X", working_freq, "HZ")], initialresults[,"eff2"],consensusresults[,"eff2"])
+      plotDF <- data.frame(rep(working_freq, nrow(initialresults)), initialresults[,"time"], conDF[1:nrow(initialresults),paste0("X", working_freq, "HZ")], initialresults[,"eff2"], consensusresults[,"eff2"])
+      names(plotDF) <- c("Freq", "Time", "Raw", "Initial", "Consensus")
     } else{
       finalparams <- final_drug_params(stim_freq = working_freq, m = 500, conDF, bestfit = bestfit, init_params, initialresults)
       finalresults <- run_mod1(stim_freq = working_freq, finalparams[nrow(finalparams),], chosenmodel = chosenmodel)
       plotDF <- data.frame(rep(working_freq, length(finalresults)), initialresults[,"time"], conDF[1:length(initialresults[,"time"]),paste0("X", working_freq, "HZ")], initialresults[,"eff2"], finalresults[,"eff2"])
-    }
+      names(plotDF) <- c("Freq", "Time", "Raw", "Initial", "Consensus")
+      }
 
     facetDF <- rbind(plotDF, facetDF)
   }

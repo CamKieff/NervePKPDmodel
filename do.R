@@ -1,3 +1,4 @@
+# --------------------------** Set Up **-------------------------------------------
 library(RxODE)
 library(ggplot2)
 library(plyr)
@@ -9,17 +10,17 @@ setwd("~/GitHub/NervePKPDmodel")
 source("defineModel.R")
 source("runModelFunctions.R")
 
-init_params <- c(KAach = 1, #ach model parameters
+init_params <- c(KAach = 1, # ACh model parameters
                  KEach = 1,
                  DVach = 6,
-                 EC50ach = 5.383, #calculated from ACH constriction curves of isolated tracheas
+                 EC50ach = 5.383, # calculated from ACH constriction curves of isolated tracheas
                  
-                 m2max = 0.5, #complex model parameters
+                 m2max = 0.5, # complex model parameters
                  chemax = 0.5,
                  IC50m2 = 7,
                  IC50che = 7,
                  
-                 KAunk = 1, #unknown relaxant neurotransmitter parameters
+                 KAunk = 1, # relaxant neurotransmitter parameters
                  KEunk = 1,
                  DVunk = 7,
                  EC50unk = 5,
@@ -28,35 +29,87 @@ init_params <- c(KAach = 1, #ach model parameters
 thismodel <- defineModel(ACH_mod="simple", unk_mod="none", effect_mod = "oneNT") #what model
 thismodel[[1]]$model                     #check model diagnostic
 
-EFSfileDB <- read.csv("EFSfileDB.csv", header = TRUE) %>% filter(TISSUE == "L")
+# --------------------------** Load Data **-------------------------------------------
+
+EFSfileDB <- read.csv("EFSfileDB.csv", header = TRUE) %>% filter(TISSUE == "U")
 freq_list <- c(0.1, 0.3, 1, 3, 10)
 #EFSfiles$DATE <- as.Date(EFSfiles$DATE, format = "%Y-%m%d")
 
 Lcontrol_EFSdata <- vector("list", length=nrow(EFSfileDB))
 for (i in 1:length(Lcontrol_EFSdata)){
-  df <- read.csv(as.character(EFSfileDB$CONTROL_FILE[i]), header = TRUE)
-  df <- df %>% filter(Time <= 60 & (Time*10) %% 1 == 0) %>%
+  df <- read.csv(as.character(EFSfileDB$TREATMENT_FILE[i]), header = TRUE)
+  df <- df %>% filter(Time <= 60 & (Time*10) %% 1 == 0) %>% #reduce sampling rate to 10/second instead of 50/second
     select(Time, paste0('X', freq_list, "HZ"))
   df_min <- min(df[, 2:ncol(df)])
   df_max <- max(df[, 2:ncol(df)])
   X0.1HZ_max <- max(df$X0.1HZ)
-  #df <- df %>% mutate_at(vars(-Time), function(x){(x-df_min)/(EFSfileDB$KCL[i])}) %>%
-  df <- df %>% mutate_at(vars(-Time), function(x){(x-df_min)/(X0.1HZ_max-df_min)}) %>%
+  df <- df %>% mutate_at(vars(-Time), function(x){(x-df_min)/(df_max-df_min)}) %>% #normalize to max
+  #df <- df %>% mutate_at(vars(-Time), function(x){(x-df_min)/(EFSfileDB$KCL[i])}) %>% normalize to KCl
+  #df <- df %>% mutate_at(vars(-Time), function(x){(x-df_min)/(X0.1HZ_max-df_min)}) %>% normalize to 0.1Hz Max
     mutate(ID = EFSfileDB$CODE[i])
   Lcontrol_EFSdata[[i]] <- df
 }
-Lcontrol_EFSdata <- bind_rows(Lcontrol_EFSdata)
+Lcontrol_EFSdata <- bind_rows(Lcontrol_EFSdata) %>% group_by(ID)
 
-g1 <- ggplot(Lcontrol_EFSdata[, c("Time", "X1HZ", "ID")], aes(x=Time, y = X1HZ, color = ID))
-g1 <- g1 + geom_line()
-g1
+# g1 <- ggplot(Lcontrol_EFSdata[, c("Time", "X1HZ", "ID")], aes(x=Time, y = X1HZ, color = ID))
+# g1 <- g1 + geom_line()
+# g1
 
-g2 <- facetgraph(conDF = test, init_params = init_params, consensus_params = results, bestfit = c("KAach", "KEach", "DVach"), consensus = TRUE, freq_list = freq_list)
+# ---------------------** Find Best 0.1 Hz and 0.3 Hz Frequencies **-------------------------------------------
 
-# should re-do file using the find_allfreq_params functions
-# freq_list = c(0.1, 0.3, 1, 3, 10), m = 50, WconDF, bestfit,
-# init_params, model = thismodel, hyper_params = c(2,0.1)
-results <- find_allfreq_params(HZdf = test, init_params = init_params, bestfit = c("KAach", "KEach", "DVach"))
+for(i in 1:nrow(EFSfileDB)){
+
+  test <- Lcontrol_EFSdata %>% filter(ID == EFSfileDB$CODE[i]) # select one tissue
+  initialresults <- run_mod1(stim_freq = 0.1, init_params, chosenmodel = thismodel)
+  finalparams <- final_drug_params(stim_freq = 0.1, m = 500, conDF = test, bestfit = c("KAach", "KEach", "DVach", "Frequency"), init_params = init_params, init_model = initialresults)
+
+  EFSfileDB$TREATMENT_0.1HZ[i] <- finalparams[nrow(finalparams),][["Frequency"]]
+
+  initialresults <- run_mod1(stim_freq = 0.3, init_params, chosenmodel = thismodel)
+  finalparams <- final_drug_params(stim_freq = 0.3, m = 500, conDF = test, bestfit = c("KAach", "KEach", "DVach", "Frequency"), init_params = init_params, init_model = initialresults)
+
+  EFSfileDB$TREATMENT_0.3HZ[i] <- finalparams[nrow(finalparams),][["Frequency"]]
+}
+
+# --------------------------** Test 1 All-Frequency Model **-------------------------------------------
+
+test <- Lcontrol_EFSdata %>% filter(ID == EFSfileDB$CODE[1]) # select one tissue
+list_1 <- c(EFSfileDB$TREATMENT_0.1HZ[1], EFSfileDB$TREATMENT_0.3HZ[1], 1, 3, 10)
+results <- find_allfreq_params(HZdf = test, m = 500, init_params = init_params, bestfit = c("KAach", "KEach", "DVach"), freq_list = list_1)
+
+g2 <- facetgraph(conDF = test, init_params = init_params, consensus_params = results, bestfit = c("KAach", "KEach", "DVach"), consensus = TRUE, freq_list = list_1)
+g2
+
+# --------------------------** Test 1 Frequency **-------------------------------------------
+
+freq0 = 0.3
+test <- Lcontrol_EFSdata %>% filter(ID == EFSfileDB$CODE[1]) # select one frequency
+initialresults <- run_mod1(stim_freq = freq0, init_params, chosenmodel = thismodel)
+finalparams <- final_drug_params(stim_freq = freq0, m = 500, conDF = test, bestfit = c("KAach", "KEach", "DVach", "Frequency"), init_params = init_params, init_model = initialresults)
+finalresults <- run_mod1(stim_freq = finalparams[nrow(finalparams),][["Frequency"]], finalparams[nrow(finalparams),], chosenmodel = thismodel)
+
+p30<- (ggplot() #plot
+       + geom_path(aes(x=test$Time, y=test[,paste0("X", freq0, "HZ")]), color="black", alpha = 0.5)
+       + geom_path(aes(x=initialresults[,"time"], y=initialresults[,"eff2"]), color="violet",size = 1)
+       + geom_path(aes(x=finalresults[,"time"], y=finalresults[,"eff2"]), color="green",size = 1)
+       +labs(list(title=paste0(freq0, " HZ Response"), x="Time (s)", y='Normalized Response'))
+       +theme_bw()
+       +xlim(0,60)
+)
+p30
+
+
+# --------------------------** Run Every Cap. All-Frequency Model**-------------------------------------------
+
+results_list <- list()
+for(i in 1:nrow(EFSfileDB)){
+  test <- Lcontrol_EFSdata %>% filter(ID == EFSfileDB$CODE[i]) # select one tissue
+  list_1 <- c(EFSfileDB$TREATMENT_0.1HZ[i], EFSfileDB$TREATMENT_0.3HZ[i], 1, 3, 10)
+  results <- find_allfreq_params(HZdf = test, m = 1000, init_params = init_params, bestfit = c("KAach", "KEach", "DVach"), freq_list = list_1)
+
+  results_list[[as.character(EFSfileDB$CODE[i])]] <- results
+}
+
 
 # 
 # #Capsaicin 0.1 Hz
